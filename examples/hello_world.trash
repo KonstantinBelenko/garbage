@@ -1,0 +1,3 @@
+str a = "Hello World!"
+int b = 10
+_print a b "X" 10 2+2 (2 * 3)
