@@ -5,8 +5,8 @@
         python3 run.py <filepath>
 '''
 
-from shared_utils import assemble, link
-from utils import args_filepath
+from src.shared_utils import assemble, link
+from src.utils import args_filepath
 import os
 
 if __name__ == "__main__":

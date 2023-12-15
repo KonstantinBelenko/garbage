@@ -1,6 +1,6 @@
 from deepdiff import DeepDiff
-from ast_parser import Parser
-from codegen import CodeGenerator
+from src.ast_parser import Parser
+from src.codegen import CodeGenerator
 import subprocess
 import tempfile
 

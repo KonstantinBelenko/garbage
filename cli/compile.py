@@ -1,4 +1,4 @@
-from utils import args_filepath, args_compile_flags
+from src.utils import args_filepath, args_compile_flags
 from shared_utils import assemble, link
 
 from ast_parser import Parser

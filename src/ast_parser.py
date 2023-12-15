@@ -1,5 +1,4 @@
-from shared_types import Ok, Err, Result
-from tokenizer import Tokenizer, Token
+from src.tokenizer import Tokenizer, Token
 import json
 
 
