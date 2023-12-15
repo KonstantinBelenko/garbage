@@ -31,7 +31,6 @@ class Tokenizer:
         # -----------------
         # Numbers:
         ('NUMBER', r'^[0-9]+(\.[0-9]+)?'),
-        ('NUMBER', r'^ANGELINA'),
         
         # -----------------
         # Strings:
