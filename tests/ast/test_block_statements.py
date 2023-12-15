@@ -1,4 +1,4 @@
-from shared_utils import verify
+from src.shared_utils import verify
 
 def test():
     

@@ -1,6 +1,6 @@
 import json
 
-from ast_parser import Parser
+from src.ast_parser import Parser
 
 from tests.ast.test_literals import test as literals_test
 from tests.ast.test_statement_list import test as statement_list_test

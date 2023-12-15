@@ -1,4 +1,4 @@
-from shared_utils import verify_codegen
+from src.shared_utils import verify_codegen
 
 def test():
     print("Running codegen statement list test...")

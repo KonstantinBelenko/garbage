@@ -1,8 +1,8 @@
 from src.utils import args_filepath, args_compile_flags
-from shared_utils import assemble, link
+from src.shared_utils import assemble, link
 
-from ast_parser import Parser
-from codegen import CodeGenerator
+from src.ast_parser import Parser
+from src.codegen import CodeGenerator
 import tempfile
 import os
 
