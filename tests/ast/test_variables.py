@@ -156,3 +156,69 @@ def test():
             }
         ]
     }, 'VariableDeclaration with multiple declarations and one assignment')
+    
+    verify('''
+        let x = 5;
+        let y = 5;
+        let c = x + y;    
+    ''', {
+        "type": "Program",
+        "body": [
+            {
+                "type": "VariableDeclaration",
+                "declarations": [
+                    {
+                        "type": "VariableDeclarator",
+                        "id": {
+                            "type": "Identifier",
+                            "name": "x"
+                        },
+                        "init": {
+                            "type": "NumericLiteral",
+                            "value": 5
+                        }
+                    }
+                ]
+            },
+            {
+                "type": "VariableDeclaration",
+                "declarations": [
+                    {
+                        "type": "VariableDeclarator",
+                        "id": {
+                            "type": "Identifier",
+                            "name": "y"
+                        },
+                        "init": {
+                            "type": "NumericLiteral",
+                            "value": 5
+                        }
+                    }
+                ]
+            },
+            {
+                "type": "VariableDeclaration",
+                "declarations": [
+                    {
+                        "type": "VariableDeclarator",
+                        "id": {
+                            "type": "Identifier",
+                            "name": "c"
+                        },
+                        "init": {
+                            "type": "BinaryExpression",
+                            "operator": "+",
+                            "left": {
+                                "type": "Identifier",
+                                "name": "x"
+                            },
+                            "right": {
+                                "type": "Identifier",
+                                "name": "y"
+                            }
+                        }
+                    }
+                ]
+            }
+        ]
+    }, 'VariableDeclaration with multiple declarations and multiple assignments')

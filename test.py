@@ -28,9 +28,11 @@ from tests.codegen.test_codegen_literals import test as codegen_test_literals
 from tests.codegen.test_codegen_statement_list import test as codegen_test_statement_list
 from tests.codegen.test_codegen_math import test as codegen_test_math
 from tests.codegen.test_codegen_variables import test as codegen_test_variables
+from tests.codegen.test_codegen_cmdprint import test as codegen_test_cmdprint
 
 codegen_tests = [
-    codegen_test_literals, codegen_test_statement_list, codegen_test_math, codegen_test_variables
+    codegen_test_literals, codegen_test_statement_list, codegen_test_math, codegen_test_variables,
+    codegen_test_cmdprint
 ]
 
 def manual_test():

@@ -1,3 +1,4 @@
+import json
 class CodeGenerator:
     '''
     CodeGenerator is a class that generates assembly code from an AST.
@@ -121,6 +122,8 @@ class CodeGenerator:
                 
                 self.assembly.append(f'    {literal_label}: .asciz "{value}"')
 
+        elif node_type == 'CmdPrintStatement':
+            self._generate_data(node.get('body'))
     
     def _generate_text(self, node: dict) -> None:
         node_type = node.get('type')
@@ -140,31 +143,103 @@ class CodeGenerator:
             var_name = node.get('id').get('name')
             init = node.get('init')
 
-            if init and init.get('type') == 'BinaryExpression':
-                self._generate_binary_expression(init, var_name)
+            if init:
+                init_type = init.get('type')
+                if init_type == 'BinaryExpression':
+                    intermediate_node = self._generate_binary_expression(init)
+                    self._generate_intermediate_assignment(intermediate_node, var_name)
+        
+        # Print
+        elif node_type == 'CmdPrintStatement':
+            self._generate_print(node)
+            
+    def _generate_print(self, node: dict) -> None:
+        '''
+        Generates assembly to print a value.
+        '''
+        
+        value = node.get('body')
+        if value.get('type') == 'StringLiteral':
+            self._generate_print_string(value)
+        if value.get('type') == 'NumericLiteral':
+            self._generate_print_numeric(value)
                 
-    def _generate_binary_expression(self, node: dict, result_var: str) -> None:
-        left = node.get('left')
+                
+    def _generate_print_string(self, node: dict) -> None:
+        '''
+        Generates assembly to print a string.
+        '''
+        
+        literal_label = f'literal_{node.get("asm_literal_label")}'
+        self.assembly.append(f'    adrp x6, {literal_label}@PAGE')
+        self.assembly.append(f'    add x6, x6, {literal_label}@PAGEOFF')
+        self.assembly.append(f'    mov x0, #1')
+        self.assembly.append(f'    mov x1, x6')
+        self.assembly.append(f'    mov x2, #{len(node.get("value"))}')
+        self.assembly.append(f'    mov x16, #4')
+        self.assembly.append(f'    svc 0')
+        
+                
+    def _generate_intermediate_assignment(self, intermediate_node: dict, var_name: str) -> None:
+        '''
+        Generates an assignment statement for an intermediate expression.
+        '''
+        register_holding_value = intermediate_node.get('name')
+        
+        self.assembly.append(f'    adrp x0, {var_name}@PAGE')
+        self.assembly.append(f'    add x0, x0, {var_name}@PAGEOFF')
+        self.assembly.append(f'    str {register_holding_value}, [x0]')
+    
+                
+    def _generate_binary_expression(self, node: dict) -> dict:
+        '''
+        Adds binary expression operation into the assembly code and
+        returns a new node to be placed in place of the binary expression.
+        '''
+        
+        left = node.get('left') 
         right = node.get('right')
+        operator = node.get('operator')
         
-        left_var = left.get('name')
-        right_var = right.get('name')
-        
-        # Load left variable into a register
-        self.assembly.append(f'    adrp x1, {left_var}@PAGE')
-        self.assembly.append(f'    add x1, x1, {left_var}@PAGEOFF')
-        self.assembly.append(f'    ldr w2, [x1]')
-        
-        # Load right variable into a register
-        self.assembly.append(f'    adrp x3, {right_var}@PAGE')
-        self.assembly.append(f'    add x3, x3, {right_var}@PAGEOFF')
-        self.assembly.append(f'    ldr w4, [x3]')
-        
-        # Perform addition
-        self.assembly.append('    add w2, w2, w4')
+        # Process left operand
+        if left.get('type') == 'BinaryExpression':
+            left_result = self._generate_binary_expression(left)
+            left_register = left_result.get('name')
+        elif left.get('type') == 'Identifier' or left.get('type') == 'NumericLiteral':
+            left_register = self._load_operand(left, 'x0', 'w1')
 
-        # Store the result in the result variable
-        self.assembly.append(f'    adrp x5, {result_var}@PAGE')
-        self.assembly.append(f'    add x5, x5, {result_var}@PAGEOFF')
-        self.assembly.append(f'    str w2, [x5]')
+        # Process right operand
+        if right.get('type') == 'BinaryExpression':
+            right_result = self._generate_binary_expression(right)
+            right_register = right_result.get('name')
+        elif right.get('type') == 'Identifier' or right.get('type') == 'NumericLiteral':
+            right_register = self._load_operand(right, 'x2', 'w3')
         
+        # Perform the operation
+        if operator == '+':
+            self.assembly.append(f'    add w5, {left_register}, {right_register}')
+        elif operator == '*':
+            self.assembly.append(f'    mul w5, {left_register}, {right_register}')
+        else:
+            raise ValueError(f'Unsupported operator: {operator}')
+
+        return {
+            "type": "IntermediateExpression",
+            "name": "w5"
+        }
+    
+    def _load_operand(self, node: dict, reg_page: str, reg_offset: str) -> str:
+        '''
+        Loads an operand into a register.
+        Returns the register where the operand is loaded.
+        '''
+        if node.get('type') == 'Identifier':
+            var_name = node.get('name')
+            self.assembly.append(f'    adrp {reg_page}, {var_name}@PAGE')
+            self.assembly.append(f'    add {reg_page}, {reg_page}, {var_name}@PAGEOFF')
+            self.assembly.append(f'    ldr {reg_offset}, [{reg_page}]')
+            return reg_offset
+        elif node.get('type') == 'NumericLiteral':
+            value = node.get('value')
+            self.assembly.append(f'    mov {reg_offset}, #{value}')
+            return reg_offset
