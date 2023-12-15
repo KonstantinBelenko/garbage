@@ -1,0 +1,2 @@
+deepdiff==6.7.1
+ordered-set==4.1.0
