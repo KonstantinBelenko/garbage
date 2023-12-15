@@ -19,6 +19,18 @@ class Parser:
         
         return self.Program()
     
+    def parse_optimized(self, string) -> dict:
+        self.string = string
+        self.tokenizer = Tokenizer(string)
+        
+        self.lookahead = self.tokenizer.get_next_token()
+        
+        program = self.Program()
+        
+        program = self.collapse_static_expressions(program)
+        
+        return program
+    
     def Program(self) -> dict:
         '''
         Program
@@ -51,6 +63,7 @@ class Parser:
             | BlockStatement
             | EmptyStatement
             | VariableStatement
+            | CmdPrintStatement
             ;
         '''
         if self.lookahead.type == ';':
@@ -59,8 +72,29 @@ class Parser:
             return self.BlockStatement()
         elif self.lookahead.type == 'LET':
             return self.VariableStatement()
+        elif self.lookahead.type == '_PRINT':
+            return self.CmdPrintStatement()
         else:
             return self.ExpressionStatement()
+    
+    def CmdPrintStatement(self) -> dict:
+        '''
+        CmdPrintStatement
+            | example: _print("hello");
+            | '_print' ( StringLiteral ) ';'
+            ;
+        '''
+        self.eat('_PRINT')
+        self.eat('(')
+        expression = self.Expression()
+        self.eat(')')
+        self.eat(';')
+        
+        return {
+            'type': 'CmdPrintStatement',
+            'body': expression
+        }
+
     
     def VariableStatement(self) -> dict:
         '''
@@ -343,7 +377,7 @@ class Parser:
     
     def eat(self, type) -> Token:
         if self.lookahead is None:
-            raise Exception('Unexpected end of input')
+            raise Exception('Unexpected end of input, you may be missing a semicolon \";\"')
         
         token = self.lookahead
         
@@ -353,3 +387,52 @@ class Parser:
         self.lookahead = self.tokenizer.get_next_token()
         
         return token
+    
+    
+    @staticmethod
+    def collapse_static_expressions(node):
+        if not isinstance(node, dict):
+            return node
+
+        for key, value in node.items():
+            if isinstance(value, list):
+                node[key] = [Parser.collapse_static_expressions(item) for item in value]
+            elif isinstance(value, dict):
+                node[key] = Parser.collapse_static_expressions(value)
+
+        if Parser.is_static_expression(node):
+            return Parser.evaluate_static_expression(node)
+        
+        return node
+    
+    @staticmethod
+    def is_static_expression(node: dict) -> bool:
+        if node['type'] != 'BinaryExpression':
+            return False
+        if not isinstance(node['left'], dict) or not isinstance(node['right'], dict):
+            return False
+        return node['left']['type'] == 'NumericLiteral' and node['right']['type'] == 'NumericLiteral'
+    
+    @staticmethod
+    def evaluate_static_expression(node: dict) -> dict:
+        left_value = node['left']['value']
+        right_value = node['right']['value']
+        operator = node['operator']
+        result = Parser.apply_operator(left_value, right_value, operator)
+        return {
+            'type': 'NumericLiteral',
+            'value': result
+        }
+    
+    @staticmethod
+    def apply_operator(left: int, right: int, operator: str) -> int:
+        if operator == '+':
+            return left + right
+        elif operator == '-':
+            return left - right
+        elif operator == '*':
+            return left * right
+        elif operator == '/':
+            return left // right  # Integer division
+        else:
+            raise Exception(f'Unknown operator: {operator}')

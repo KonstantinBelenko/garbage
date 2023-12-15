@@ -11,7 +11,7 @@ def test():
             42;
             'Hello World!';
             32;
-        ''', 
+        ''',
     {
         'type': 'Program',
         'body': [

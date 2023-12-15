@@ -26,6 +26,80 @@ def test():
         ]
     }, 'VariableDeclaration')
     
+    verify('''
+        let x = 42;
+        let y = 42;
+        let c = x + y + x;
+    ''',  {
+        "type": "Program",
+        "body": [
+            {
+                "type": "VariableDeclaration",
+                "declarations": [
+                    {
+                        "type": "VariableDeclarator",
+                        "id": {
+                            "type": "Identifier",
+                            "name": "x"
+                        },
+                        "init": {
+                            "type": "NumericLiteral",
+                            "value": 42
+                        }
+                    }
+                ]
+            },
+            {
+                "type": "VariableDeclaration",
+                "declarations": [
+                    {
+                        "type": "VariableDeclarator",
+                        "id": {
+                            "type": "Identifier",
+                            "name": "y"
+                        },
+                        "init": {
+                            "type": "NumericLiteral",
+                            "value": 42
+                        }
+                    }
+                ]
+            },
+            {
+                "type": "VariableDeclaration",
+                "declarations": [
+                    {
+                        "type": "VariableDeclarator",
+                        "id": {
+                            "type": "Identifier",
+                            "name": "c"
+                        },
+                        "init": {
+                            "type": "BinaryExpression",
+                            "operator": "+",
+                            "left": {
+                                "type": "BinaryExpression",
+                                "operator": "+",
+                                "left": {
+                                    "type": "Identifier",
+                                    "name": "x"
+                                },
+                                "right": {
+                                    "type": "Identifier",
+                                    "name": "y"
+                                }
+                            },
+                            "right": {
+                                "type": "Identifier",
+                                "name": "x"
+                            }
+                        }
+                    }
+                ]
+            }
+        ]
+    }, 'Multiple Variable Declarations')
+    
     verify('let x, y;', {
         'type': 'Program',
         'body': [

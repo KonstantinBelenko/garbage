@@ -6,9 +6,14 @@ import tempfile
 
 import json
 
-def verify(input: str, expected: dict, name: str = None):
+def verify(input: str, expected: dict, name: str = None, optimize: bool = False) -> None:
     parser = Parser()
-    result = parser.parse(input)
+    result = None
+    
+    if optimize:
+        result = parser.parse_optimized(input)    
+    else:
+        result = parser.parse(input)
     
     # Convert to dict
     
@@ -26,11 +31,16 @@ def verify(input: str, expected: dict, name: str = None):
     else:
         print('\033[92m' + '✓' + '\033[0m', name or 'passed')
 
-def verify_codegen(inp: str, output_asm: list[str], name_str=None) -> None:
+def verify_codegen(inp: str, output_asm: list[str], name_str=None, optimize=False) -> None:
     parser = Parser()
     codegen = CodeGenerator()
-
-    ast = parser.parse(inp)
+    ast = None
+    
+    if optimize:
+        ast = parser.parse_optimized(inp)
+    else:
+        ast = parser.parse(inp)
+        
     asm = codegen.generate(ast)
     
     expected_output = '\n'.join(output_asm)

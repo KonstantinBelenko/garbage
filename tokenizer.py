@@ -25,6 +25,10 @@ class Tokenizer:
         ('LET', r'^\blet\b'),
         
         # -----------------
+        # Hardcode commands:
+        ('_PRINT', r'^_print'),
+        
+        # -----------------
         # Numbers:
         ('NUMBER', r'^[0-9]+(\.[0-9]+)?'),
         ('NUMBER', r'^ANGELINA'),
