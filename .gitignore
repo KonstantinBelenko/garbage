@@ -1,3 +1,6 @@
 venv
 __pycache__
 *.o
+temp
+temp.o
+temp.s
