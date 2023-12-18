@@ -1,8 +1,12 @@
 # ♻️ Garbage Programming Language
 
-## Supported platforms
+A compiled general purpose programming language that compiles directly to assembly.
 
-1. ARM 64 (m1)
+Primary reason for it's existence is for me to learn new things.
+
+## Currently Supported Platforms
+
+1. arm64 (m1)
 
 ## Feature list
 
