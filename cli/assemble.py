@@ -13,8 +13,6 @@ def main():
     filepath, filepath_no_exp = args_filepath()
     assemble(filepath, filepath_no_exp + '.o')
     link(filepath_no_exp + '.o', filepath_no_exp)
-    
-    os.system(filepath_no_exp)
 
 if __name__ == "__main__":
     main()

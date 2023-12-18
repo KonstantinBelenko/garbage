@@ -19,6 +19,7 @@ class Tokenizer:
         (None, r'^\s+'),
         (None, r'^\/\/.*'),
         (None, r'^\/\*[\s\S]*?\*\/'),
+        (None, r'^#.*'),
         
         # -----------------
         # Keywords:

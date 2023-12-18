@@ -162,46 +162,24 @@ class CodeGenerator:
             self._generate_print_string(value)
         if value.get('type') == 'NumericLiteral':
             self._generate_print_numeric(value)
+        elif value.get('type') == 'BinaryExpression':
+            result = self._generate_binary_expression(value)
+            self._generate_print_numeric(result)
                 
     def _generate_print_numeric(self, node: dict) -> None:
         '''
         Generates assembly to print a numeric value by converting it to a string.
         '''
 
-        # Assume the numeric value is in w6 and the converted string will be stored starting at address in x7
-        # Temporary registers x8 and x9 are used for intermediate calculations
-        numeric_label = f'literal_{node.get("asm_literal_label")}'
-        self.assembly.append(f'    adrp x6, {numeric_label}@PAGE')
-        self.assembly.append(f'    add x6, x6, {numeric_label}@PAGEOFF')
-        self.assembly.append(f'    ldr w6, [x6]')
+        value_register = self._load_operand(node, 'x0', 'w0')
 
-        # Reserve space for the converted string (max 12 bytes for 32-bit int + null terminator)
-        self.assembly.append(f'    sub sp, sp, #13')
-        self.assembly.append(f'    mov x7, sp')
-
-        # Conversion loop
-        self.assembly.append('convert_loop:')
-        self.assembly.append(f'    mov w8, #10')
-        self.assembly.append(f'    udiv w9, w6, w8')
-        self.assembly.append(f'    msub w9, w9, w8, w6')
-        self.assembly.append(f'    add w9, w9, #48')  # Convert to ASCII
-        self.assembly.append(f'    strb w9, [x7], #1')
-        self.assembly.append(f'    mov w6, w9')
-        self.assembly.append(f'    cbnz w6, convert_loop')
-
-        # Null-terminate the string
-        self.assembly.append(f'    strb wzr, [x7]')
-
-        # Print the string
+        self.assembly.append(f'    bl convert_number_to_string')
         self.assembly.append(f'    mov x0, #1')  # File descriptor: stdout
-        self.assembly.append(f'    mov x1, sp')  # String address
-        self.assembly.append(f'    mov x2, x7')  # String length
-        self.assembly.append(f'    sub x2, x2, sp')
-        self.assembly.append(f'    mov x16, #4')  # Syscall: write
+        self.assembly.append(f'    mov x1, x0')  # String address from convert_number_to_string
+        self.assembly.append(f'    bl strlen')   # Assuming a helper function exists to calculate string length
+        self.assembly.append(f'    mov x2, x0')  # String length
+        self.assembly.append(f'    mov x16, #4') # Syscall: write
         self.assembly.append(f'    svc 0')
-
-        # Restore stack pointer
-        self.assembly.append(f'    add sp, sp, #13')
                 
     def _generate_print_string(self, node: dict) -> None:
         '''

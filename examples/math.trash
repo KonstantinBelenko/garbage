@@ -1,7 +1,5 @@
 let a = 5 + 3 * 2;
-let b = (5 + 3) * 2;
-let d = 4 + 13 * 2;
-let e = (6 + (2 * 3));
-let f  = 5 * 2 + (3 + 2) * (6 + 2);
+let b = 10;
+let c = a + b;
 
-_print("ADHASJDLAKSJD\n");
+_print("Done\n");
