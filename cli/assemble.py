@@ -6,12 +6,14 @@
 '''
 
 from src.shared_utils import assemble, link
-from src.utils import args_filepath
+from src.utils import args_parse, get_file_paths
 
 def main():
-    filepath, filepath_no_exp = args_filepath()
-    assemble(filepath, filepath_no_exp + '.o')
-    link(filepath_no_exp + '.o', filepath_no_exp)
+    args = args_parse()
+    filepath, filepath_no_ext = get_file_paths(args.filepath)
+    
+    assemble(filepath, filepath_no_ext + '.o')
+    link(filepath_no_ext + '.o', filepath_no_ext)
 
 if __name__ == "__main__":
     main()

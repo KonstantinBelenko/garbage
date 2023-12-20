@@ -7,13 +7,22 @@ class TestCompileLiterals(unittest.TestCase):
         self.maxDiff = None
 
     def test_literal_int(self):
-        compile_test('42;')
+        try:
+            compile_test('42;')
+        except Exception as e:
+            self.fail(e)
 
     def test_literal_string(self):
-        compile_test('"hello world";')
+        try:
+            compile_test('"hello world";')
+        except Exception as e:
+            self.fail(e)
     
     def test_literal_string_single_quote(self):
-        compile_test("'hello world';")
+        try:
+            compile_test("'hello world';")
+        except Exception as e:
+            self.fail(e)
 
 if __name__ == '__main__':
     unittest.main()

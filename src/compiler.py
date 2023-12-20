@@ -4,6 +4,7 @@ from src.shared_utils import assemble, link
 
 from typing import Optional
 import tempfile
+import os
     
 def compile(code: str, asm_path: Optional[str] = None, obj_path: Optional[str] = None, out_path: Optional[str] = None):
 
@@ -23,6 +24,10 @@ def compile(code: str, asm_path: Optional[str] = None, obj_path: Optional[str] =
 
     assemble(asm_path, obj_path)
     link(obj_path, out_path)
+    
+    EXECUTION_MODE = out_path == random_tmp_dir.name + '/temp'
+    if EXECUTION_MODE:
+        os.system(out_path)
 
 def compile_test(code: str):
     compile(code, 'temp.s', None, 'temp.out')

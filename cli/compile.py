@@ -1,24 +1,20 @@
-from src.utils import args_filepath, args_compile_flags
+from src.utils import args_parse, get_file_paths
 from src.shared_utils import assemble, link
 
 from src.compiler import compile
 
-import tempfile
-import os
-
 def main():
-    filepath, fileoath_no_ext = args_filepath()
-    save_assembly, save_obj, save_output = args_compile_flags()
+    args = args_parse()
+    filepath, filepath_no_ext = get_file_paths(args.filepath)
 
-    asm_path = fileoath_no_ext + '.s' if save_assembly else None
-    obj_path = fileoath_no_ext + '.o' if save_obj else None
-    out_path = fileoath_no_ext if save_output else None
+    asm_path = filepath_no_ext + '.s' if args.assembly else None
+    obj_path = filepath_no_ext + '.o' if args.saveobj else None
+    out_path = args.output
 
-    compile(filepath, asm_path, obj_path, out_path)
+    with open(filepath, 'r') as f:
+        code = f.read()
 
-    EXECUTION_MODE = not save_output
-    if EXECUTION_MODE:
-        os.system(f'./{out_path}')
+    compile(code, asm_path, obj_path, out_path)
 
 
 if __name__ == '__main__':

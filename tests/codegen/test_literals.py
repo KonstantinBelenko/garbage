@@ -22,7 +22,6 @@ class TestCodegenLiterals(unittest.TestCase):
                 }
             ]
         })
-        print("AAAA:", asm)
         self.assertEqual(
             asm,
             [

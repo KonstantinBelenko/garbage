@@ -7,6 +7,8 @@ class CodeGenerator:
         self.assembly = []
         self.literals_map = {}
         self.literal_counter = 0
+        self.required_commands = set()
+
     
     def generate(self, ast: dict) -> list[str]:
         
@@ -18,6 +20,9 @@ class CodeGenerator:
         section_data = self.generate_data(ast)
         section_text = self.generate_text(ast)
         
+        for cmd in self.required_commands:
+            self.assembly.extend(self._generate_command(cmd))
+        
         self.assembly.extend(section_data)
         self.assembly.extend(section_text)
         
@@ -27,13 +32,14 @@ class CodeGenerator:
         data_section = ['.data']
         
         def handle_node(node: dict):
-            if node['type'] == NodeType.NUMERIC_LITERAL:
+            node_type = node['type']
+            if node_type == NodeType.NUMERIC_LITERAL:
                 literal_label = f'literal_{self.literal_counter}'
                 node['asm_literal_label'] = literal_label
                 self.literals_map[node['value']] = literal_label
                 data_section.append(f'{literal_label}: .word {node["value"]}')
                 self.literal_counter += 1
-            elif node['type'] == NodeType.STRING_LITERAL:
+            elif node_type == NodeType.STRING_LITERAL:
                 literal_label = f'literal_{self.literal_counter}'
                 node['asm_literal_label'] = literal_label
                 self.literals_map[node['value']] = literal_label
@@ -46,9 +52,14 @@ class CodeGenerator:
     def generate_text(self, ast: dict) -> list[str]:
         text_section = ['.text', '_main:']
         
-        # Terminate the program
-        text_section.extend(['mov x0, #0', 'mov x16, #1', 'svc 0' ])
+        def handle_node(node: dict):
+            node_type = node.get('type')
+            if node_type == NodeType.CMD_PRINT_STATEMENT:
+                self.required_commands.add('print_string')
+                text_section.extend(self._generate_cmd_print(node))
         
+        self._traverse_ast(ast, handle_node)
+        text_section.extend(['mov x0, #0', 'mov x16, #1', 'svc 0' ])
         return text_section
 
     def _traverse_ast(self, node: dict, handler):
@@ -60,6 +71,59 @@ class CodeGenerator:
                 for item in value:
                     if isinstance(item, dict):
                         self._traverse_ast(item, handler)
+
+
+    def _generate_cmd_print(self, node: dict) -> list[str]:
+        print_instructions = []
+        value_node = node['body']
+        value_node_type = value_node.get('type')
+
+        if value_node_type == NodeType.STRING_LITERAL:
+            literal_label = self.literals_map.get(value_node.get('value'))
+            if literal_label:
+                print_instructions.extend([
+                    'adrp x1, %s@PAGE' % literal_label,         # Load the page address of the string
+                    'add x1, x1, %s@PAGEOFF' % literal_label,   # Add the offset to the page address
+                    'bl print_string'                           # Branch to print_string function
+                ])
+            else:
+                # Handle the case where the string is not in the literals map
+                # This would require additional logic to handle
+                pass
+        else:
+            # Handle non-string values by converting them to string
+            # This would require additional logic to handle
+            pass
+
+        return print_instructions
+
+    def _generate_command(self, cmd):
+        if cmd == 'print_string':
+            return self._generate_print_string_command()
+        # Other commands can be added similarly
+        return []
+    
+    def _generate_print_string_command(self):
+        # Example implementation of print_string command
+        return [
+            'print_string:',
+            'ldrb w2, [x1]',
+            'cmp w2, #0',
+            'beq _print_string_end',
+            'sub sp, sp, #16',
+            'str x1, [sp]',
+            'mov x0, 1',
+            'mov x2, 1',
+            'mov x16, 4',
+            'svc 0',
+            'ldr x1, [sp]',
+            'add sp, sp, #16',
+            'add x1, x1, #1',
+            'b print_string',
+            '_print_string_end:',
+            'ret',
+        ]
+
 
 # class CodeGenerator:
 #     '''

@@ -1,26 +1,14 @@
-import argparse
-import sys
 import os
+import argparse
 
-def args_filepath() -> tuple[str, str]:
-    if len(sys.argv) < 2:
-        return Exception("Please provide a filepath")
-    
-    path = sys.argv[1]
-    filepath_no_ext, _ = os.path.splitext(path)
-    
-    return path, filepath_no_ext
+def get_file_paths(filepath: str) -> tuple[str, str]:
+    filepath_no_ext, _ = os.path.splitext(filepath)
+    return filepath, filepath_no_ext
 
-def args_compile_flags() -> tuple[str, str]:
-    '''
-    returns = tuple[ -s assembly | bool, -o output | bool ]
-    '''
-    
+def args_parse():
     parser = argparse.ArgumentParser()
-    parser.add_argument('filepath', type=str)
-    parser.add_argument('-s', '--assembly', action='store_true', default=False, required=False)
-    parser.add_argument('-o', '--output', action='store_true', default=False, required=False)
-    parser.add_argument('-so', '--saveobj', action='store_true', default=False, required=False)
-    args = parser.parse_args()
-    
-    return args.assembly, args.saveobj, args.output
+    parser.add_argument('filepath', type=str, help='Path to the source file')
+    parser.add_argument('-s', '--assembly', action='store_true', help='Compile to assembly')
+    parser.add_argument('-o', '--output', type=str, help='Output file path')
+    parser.add_argument('-so', '--saveobj', action='store_true', help='Save object file')
+    return parser.parse_args()
