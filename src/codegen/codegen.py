@@ -160,23 +160,28 @@ class CodeGenerator:
         value = node.get('body')
         if value.get('type') == 'StringLiteral':
             self._generate_print_string(value)
-        if value.get('type') == 'NumericLiteral':
+        if value.get('type') == 'NumericLiteral' or value.get('type') == 'Identifier':
             self._generate_print_numeric(value)
         elif value.get('type') == 'BinaryExpression':
             result = self._generate_binary_expression(value)
             self._generate_print_numeric(result)
-                
+    
     def _generate_print_numeric(self, node: dict) -> None:
         '''
         Generates assembly to print a numeric value by converting it to a string.
         '''
 
+        # Load the numeric value or variable into a register
         value_register = self._load_operand(node, 'x0', 'w0')
 
+        # Convert the number in the register to a string
+        self.assembly.append(f'    mov x0, {value_register}')  # Move the value to x0 for conversion
         self.assembly.append(f'    bl convert_number_to_string')
+
+        # Print the string
         self.assembly.append(f'    mov x0, #1')  # File descriptor: stdout
         self.assembly.append(f'    mov x1, x0')  # String address from convert_number_to_string
-        self.assembly.append(f'    bl strlen')   # Assuming a helper function exists to calculate string length
+        self.assembly.append(f'    bl strlen')   # Calculate string length
         self.assembly.append(f'    mov x2, x0')  # String length
         self.assembly.append(f'    mov x16, #4') # Syscall: write
         self.assembly.append(f'    svc 0')

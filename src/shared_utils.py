@@ -1,5 +1,5 @@
 from deepdiff import DeepDiff
-from src.ast_parser import Parser
+from src.parser import ASTParser
 from src.codegen import CodeGenerator
 import subprocess
 import tempfile
@@ -7,7 +7,7 @@ import tempfile
 import json
 
 def verify(input: str, expected: dict, name: str = None, optimize: bool = False) -> None:
-    parser = Parser()
+    parser = ASTParser()
     result = None
     
     if optimize:
@@ -31,8 +31,28 @@ def verify(input: str, expected: dict, name: str = None, optimize: bool = False)
     else:
         print('\033[92m' + '✓' + '\033[0m', name or 'passed')
 
+def verify_codegen_ast(input: dict, expected: list[str], name: str = None, optimize: bool = False) -> None:
+    codegen = CodeGenerator()
+    result = None
+    
+    if optimize:
+        result = codegen.generate_optimized(input)    
+    else:
+        result = codegen.generate(input)
+    
+    expected_output = '\n'.join(expected)
+    
+    if result != expected_output:
+        print('\033[91m' + '✗' + '\033[0m', name or 'failed')
+        print("Expected:\n", expected_output)
+        print("Actual:\n", result)
+        
+        assert result == expected_output
+    else:
+        print('\033[92m' + '✓' + '\033[0m', name or 'passed')
+
 def verify_codegen(inp: str, output_asm: list[str], name_str=None, optimize=False) -> None:
-    parser = Parser()
+    parser = ASTParser()
     codegen = CodeGenerator()
     ast = None
     
