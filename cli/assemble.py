@@ -7,7 +7,6 @@
 
 from src.shared_utils import assemble, link
 from src.utils import args_filepath
-import os
 
 def main():
     filepath, filepath_no_exp = args_filepath()
