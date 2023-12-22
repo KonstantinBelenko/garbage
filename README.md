@@ -10,18 +10,18 @@ Primary reason for it's existence is for me to learn new things.
 
 ## Currently working on
 
-1. Printing variables and expressions.
-2. Algebraic operations like - and /.
+1. Algebraic operations for variables.
+2. Printing variables and expressions.
 3. If statements.
 
 ## Feature list
 
 1. [x] It compiles.
-2. [x] +, *
-3. [ ] -, /
-4. [ ] %
-5. [x] _print(string literals)
-6. [x] _print(numeric litrals)
+2. [x] +, *, -, /
+3. [x] _print(string literals)
+4. [x] _print(numeric litrals)
+5. [x] _print(static variable)
+6. [ ] variable math
 7. [ ] _print(anything)
 8. [ ] if statements
 9. [ ] loops

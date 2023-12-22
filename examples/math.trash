@@ -1,4 +1,4 @@
-let a = 2 * 10;
+let a = 50 / 10;
 let b = 5 - 2;
 let c = a + b;
 
