@@ -21,8 +21,9 @@ Primary reason for it's existence is for me to learn new things.
 3. [ ] -, /
 4. [ ] %
 5. [x] _print(string literals)
-6. [ ] _print(anything)
-7. [ ] if statements
-8. [ ] loops
-9. [ ] functions
-10. [ ] classes?
+6. [x] _print(numeric litrals)
+7. [ ] _print(anything)
+8. [ ] if statements
+9. [ ] loops
+10. [ ] functions
+11. [ ] classes?
