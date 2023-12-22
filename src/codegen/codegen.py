@@ -8,7 +8,7 @@ class CodeGenerator:
         self.literals_map = {}
         self.literal_counter = 0
         self.required_commands = set()
-
+        self.var_name_to_node = {}
     
     def generate(self, ast: dict) -> list[str]:
         
@@ -29,18 +29,33 @@ class CodeGenerator:
     
     def generate_data(self, ast: dict) -> list[str]:
         data_section = ['.data']
-        
+
         def handle_node(node: dict):
             node_type = node['type']
-            if node_type == NodeType.NUMERIC_LITERAL:
-                literal_label = f'literal_{self.literal_counter}'
-                node['asm_literal_label'] = literal_label
-                self.literals_map[node['value']] = literal_label
-                data_section.extend([
-                    '.align 3',
-                    '%s: .word %s' % (literal_label, node['value'],)
-                ])
-                self.literal_counter += 1
+            if node_type == NodeType.VARIABLE_DECLARATION:
+                self.var_name_to_node[node['id']['name']] = node
+                
+                var_name = node['id']['name']
+                init = node['init']
+                if not init:
+                    data_section.extend([
+                        '.align 3',
+                        '%s: .word 0' % (var_name,)
+                    ])
+                else:
+                    handle_init(init, var_name)
+            
+            elif node_type == NodeType.NUMERIC_LITERAL:
+                if 'asm_literal_label' not in node:
+                    literal_label = f'literal_{self.literal_counter}'
+                    node['asm_literal_label'] = literal_label
+                    self.literals_map[node['value']] = literal_label
+                    self.literal_counter += 1
+                    data_section.extend([
+                        '.align 3',
+                        '%s: .word %s' % (literal_label, node['value'],)
+                    ])
+            
             elif node_type == NodeType.STRING_LITERAL:
                 literal_label = f'literal_{self.literal_counter}'
                 node['asm_literal_label'] = literal_label
@@ -51,6 +66,18 @@ class CodeGenerator:
                 ])
                 self.literal_counter += 1
         
+        def handle_init(init: dict, var_name: str):
+            if init['type'] == NodeType.NUMERIC_LITERAL:
+                data_section.extend([
+                    '.align 3',
+                    '%s: .word %s' % (var_name, init['value'],)
+                ])
+            elif init['type'] == NodeType.STRING_LITERAL:
+                data_section.extend([
+                    '.align 3',
+                    '%s: .asciz "%s"' % (var_name, init['value'],)
+                ])
+
         self._traverse_ast(ast, handle_node)
         return data_section
     
@@ -86,11 +113,7 @@ class CodeGenerator:
         if value_node_type == NodeType.STRING_LITERAL:
             literal_label = self.literals_map.get(value_node.get('value'))
             if literal_label:
-                print_instructions.extend([
-                    'adrp x1, %s@PAGE' % literal_label,         # Load the page address of the string
-                    'add x1, x1, %s@PAGEOFF' % literal_label,   # Add the offset to the page address
-                    'bl print_string'                           # Branch to print_string function
-                ])
+                print_instructions.extend(self._generate_print_string_asm(literal_label))
             else:
                 raise ValueError('String literal not found in literals map')
         
@@ -98,20 +121,49 @@ class CodeGenerator:
             self.required_commands.add('itoa')
             literal_label = self.literals_map.get(value_node.get('value'))
             if literal_label:
-                print_instructions.extend([
-                    'adrp x0, %s@PAGE' % literal_label,             # Load the page address of the string
-                    'ldr x0, [x0, %s@PAGEOFF]' % literal_label,     # Add the offset to the page address
-                    'bl itoa',                                      # Branch to int_to_string function
-                    'bl print_string',                               # Branch to print_string function
-                    'add sp, sp, x10'
-                ])
+                print_instructions.extend(self._generate_print_int_asm(literal_label))
             else:
                 raise ValueError('Numeric literal not found in literals map')
+        
+        elif value_node_type == NodeType.IDENTIFIER:
+            var_name = value_node.get('name')
+            var_node = self.var_name_to_node.get(var_name)
+            var_type = var_node.get('init').get('type')
+            if var_type == NodeType.STRING_LITERAL:
+                literal_label = self.literals_map.get(var_node.get('init').get('value'))
+                if literal_label:
+                    print_instructions.extend(self._generate_print_string_asm(literal_label))
+                else:
+                    raise ValueError('String literal not found in literals map')
+            elif var_type == NodeType.NUMERIC_LITERAL:
+                self.required_commands.add('itoa')
+                literal_label = self.literals_map.get(var_node.get('init').get('value'))
+                if literal_label:
+                    print_instructions.extend(self._generate_print_int_asm(literal_label))
+                else:
+                    raise ValueError('Numeric literal not found in literals map')
             
+        
         else:
             raise ValueError('Unsupported print statement')
 
         return print_instructions
+
+    def _generate_print_string_asm(self, label: str) -> list[str]:
+        return [
+            'adrp x1, %s@PAGE' % label,                 # Load the page address of the string
+            'add x1, x1, %s@PAGEOFF' % label,           # Add the offset to the page address
+            'bl print_string'                           # Branch to print_string function
+        ]
+    
+    def _generate_print_int_asm(self, label: str) -> list[str]:
+        return [
+            'adrp x0, %s@PAGE' % label,                     # Load the page address of the string
+            'ldr x0, [x0, %s@PAGEOFF]' % label,             # Add the offset to the page address
+            'bl itoa',                                      # Branch to int_to_string function
+            'bl print_string',                              # Branch to print_string function
+            'add sp, sp, x10'                               # Clean up the stack
+        ]
 
     def _generate_command(self, cmd):
         if cmd == 'print_string':
@@ -193,8 +245,6 @@ class CodeGenerator:
 #     '''
 #     CodeGenerator is a class that generates assembly code from an AST.
 #     '''
-    
-    
 #     def __init__(self) -> None:
 #         self.assembly = []
 #         self.literals_map = {}

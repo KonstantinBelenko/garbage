@@ -17,6 +17,8 @@ class NodeType(Enum):
     NUMERIC_LITERAL = 'NumericLiteral'
     STRING_LITERAL = 'StringLiteral'
     
+    INTERMEDIATE_EXPRESSION = 'IntermediateExpression'
+    
     def __eq__(self, other):
         if not isinstance(other, NodeType):
             return NotImplemented
@@ -220,7 +222,7 @@ class ASTParser:
     def ParseExpression(self) -> dict:
         '''
         Expression
-            | Literal
+            | AssignmentExpression
             ;
         '''
         

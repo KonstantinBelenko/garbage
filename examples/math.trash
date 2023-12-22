@@ -1,5 +1,7 @@
-let a = 5 + 3 * 2;
-let b = 10;
+let a = 2 * 10;
+let b = 5 - 2;
 let c = a + b;
 
+_print(a);
+_print(b);
 _print("Done\n");

@@ -6,13 +6,13 @@ Primary reason for it's existence is for me to learn new things.
 
 ## Currently Supported Platforms
 
-1. arm64 (m1)
+1. ARM64 (Building on M1 mac)
 
 ## Currently working on
 
-1. Printing int literals.
-2. Printing variables and expressions.
-3. Algebraic operations like - and /
+1. Printing variables and expressions.
+2. Algebraic operations like - and /.
+3. If statements.
 
 ## Feature list
 

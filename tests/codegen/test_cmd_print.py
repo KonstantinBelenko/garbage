@@ -68,8 +68,6 @@ class TestCodegenCmdPrint(unittest.TestCase):
                 }
             ]
         })
-        with open('tempa.s', 'w') as f:
-            f.write('\n'.join(asm))
         self.assertEqual(
             asm,
             [
