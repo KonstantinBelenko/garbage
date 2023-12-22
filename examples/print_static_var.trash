@@ -1,0 +1,5 @@
+let a = 1150;
+_print(a);
+
+let b = "Hi mom!\n";
+_print(b);

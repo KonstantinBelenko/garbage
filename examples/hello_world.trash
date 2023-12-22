@@ -1,4 +1,1 @@
-_print(69);
-_print(69);
-_print(69);
-_print('da\n');
+_print('Hello World!\n');

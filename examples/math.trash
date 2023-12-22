@@ -4,4 +4,5 @@ let c = a + b;
 
 _print(a);
 _print(b);
+_print(c);
 _print("Done\n");
