@@ -29,5 +29,9 @@ def compile(code: str, asm_path: Optional[str] = None, obj_path: Optional[str] =
     if EXECUTION_MODE:
         os.system(out_path)
 
-def compile_test(code: str):
-    compile(code, 'temp.s', None, 'temp.out')
+def compile_test(code: str) -> str:
+    '''
+    Compiles the code and returns the path to the executable.
+    '''
+    compile(code, 'tmp.s', None, 'tmp.out')
+    return 'tmp.out'

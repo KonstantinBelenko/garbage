@@ -26,8 +26,8 @@ class TestCodegenLiterals(unittest.TestCase):
             asm,
             [
                 '.global _main',
-                '.align 3',
                 '.data',
+                '.align 3',
                 'literal_0: .word 42',
                 '.text',
                 '_main:',
@@ -54,8 +54,8 @@ class TestCodegenLiterals(unittest.TestCase):
             asm,
             [
                 '.global _main',
-                '.align 3',
                 '.data',
+                '.align 3',
                 'literal_0: .asciz "hello world"',
                 '.text',
                 '_main:',

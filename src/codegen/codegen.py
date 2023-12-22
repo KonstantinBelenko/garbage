@@ -14,7 +14,6 @@ class CodeGenerator:
         
         self.assembly.extend([
             '.global _main',
-            '.align 3'
         ])
         
         section_data = self.generate_data(ast)
@@ -37,13 +36,19 @@ class CodeGenerator:
                 literal_label = f'literal_{self.literal_counter}'
                 node['asm_literal_label'] = literal_label
                 self.literals_map[node['value']] = literal_label
-                data_section.append(f'{literal_label}: .word {node["value"]}')
+                data_section.extend([
+                    '.align 3',
+                    '%s: .word %s' % (literal_label, node['value'],)
+                ])
                 self.literal_counter += 1
             elif node_type == NodeType.STRING_LITERAL:
                 literal_label = f'literal_{self.literal_counter}'
                 node['asm_literal_label'] = literal_label
                 self.literals_map[node['value']] = literal_label
-                data_section.append(f'{literal_label}: .asciz "{node["value"]}"')
+                data_section.extend([
+                    '.align 3',
+                    '%s: .asciz "%s"' % (literal_label, node['value'],)
+                ])
                 self.literal_counter += 1
         
         self._traverse_ast(ast, handle_node)
@@ -87,43 +92,102 @@ class CodeGenerator:
                     'bl print_string'                           # Branch to print_string function
                 ])
             else:
-                # Handle the case where the string is not in the literals map
-                # This would require additional logic to handle
-                pass
+                raise ValueError('String literal not found in literals map')
+        
+        elif value_node_type == NodeType.NUMERIC_LITERAL:
+            self.required_commands.add('itoa')
+            literal_label = self.literals_map.get(value_node.get('value'))
+            if literal_label:
+                print_instructions.extend([
+                    'adrp x0, %s@PAGE' % literal_label,             # Load the page address of the string
+                    'ldr x0, [x0, %s@PAGEOFF]' % literal_label,     # Add the offset to the page address
+                    'bl itoa',                                      # Branch to int_to_string function
+                    'bl print_string',                               # Branch to print_string function
+                    'add sp, sp, x10'
+                ])
+            else:
+                raise ValueError('Numeric literal not found in literals map')
+            
         else:
-            # Handle non-string values by converting them to string
-            # This would require additional logic to handle
-            pass
+            raise ValueError('Unsupported print statement')
 
         return print_instructions
 
     def _generate_command(self, cmd):
         if cmd == 'print_string':
             return self._generate_print_string_command()
-        # Other commands can be added similarly
+        elif cmd == "itoa":
+            return self._generate_int_to_string_command()
         return []
     
     def _generate_print_string_command(self):
-        # Example implementation of print_string command
         return [
             'print_string:',
             'ldrb w2, [x1]',
             'cmp w2, #0',
             'beq _print_string_end',
-            'sub sp, sp, #16',
-            'str x1, [sp]',
+            'mov x3, x1',
             'mov x0, 1',
             'mov x2, 1',
             'mov x16, 4',
             'svc 0',
-            'ldr x1, [sp]',
-            'add sp, sp, #16',
+            'mov x1, x3',
             'add x1, x1, #1',
             'b print_string',
             '_print_string_end:',
             'ret',
         ]
 
+    def _generate_int_to_string_command(self) -> list[str]:
+        return [
+            'itoa:',
+            'mov x2, x0',
+            'mov x3, #0',
+            'mov x4, #10',
+            'mov x5, #0',
+            '.itoa_count_loop:',
+            'cmp x2, #0',
+            'beq .itoa_count_end',
+            'udiv x2, x2, x4',
+            'add x3, x3, #1',
+            'b .itoa_count_loop',
+            '.itoa_count_end:',
+            'mov x10, x3',
+            'add x10, x10, #1',
+            'sub sp, sp, x10',
+            'mov x1, sp',
+            'mov x2, x0',
+            'mov x3, #0',
+            'mov x4, #10',
+            'mov x5, #0',
+            'mov x6, #0',
+            '.itoa_loop:',
+            'udiv x6, x2, x4',
+            'msub x3, x6, x4, x2',
+            'add x3, x3, #48',
+            'strb w3, [x1, x5]',
+            'mov x2, x6',
+            'add x5, x5, #1',
+            'cmp x2, #0',
+            'bne .itoa_loop',
+            'mov x3, #10',
+            'strb w3, [x1, x5]',
+            'mov x7, #0',
+            'sub x8, x5, #1',
+            '.reverse_loop:',
+            'cmp x7, x8',
+            'bge .reverse_done',
+            'ldrb w9, [x1, x7]',
+            'ldrb w2, [x1, x8]',
+            'strb w9, [x1, x8]',
+            'strb w2, [x1, x7]',
+            'add x7, x7, #1',
+            'sub x8, x8, #1',
+            'b .reverse_loop',
+            '.reverse_done:',
+            'mov x2, x10',
+            'ret',
+        ]
 
 # class CodeGenerator:
 #     '''
