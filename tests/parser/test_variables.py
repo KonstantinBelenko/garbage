@@ -1,4 +1,4 @@
-from src.parser import ASTParser, NodeType
+from src.parser import ASTParser, NT, Node
 import unittest
 
 class TestVariables(unittest.TestCase):
@@ -9,156 +9,90 @@ class TestVariables(unittest.TestCase):
     
     def test_variable_declaration(self):
         ast = self.ast_parser.parse('let x = 42;')
-        self.assertDictEqual(ast, {
-            "type": NodeType.PROGRAM,
-            "body": [
-                {
-                    "type": NodeType.VARIABLE_STATEMENT,
-                    "declarations": [
-                        {
-                            "type": NodeType.VARIABLE_DECLARATION,
-                            "id": {
-                                "type": NodeType.IDENTIFIER,
-                                "name": "x"
-                            },
-                            "init": {
-                                "type": NodeType.NUMERIC_LITERAL,
-                                "value": 42
-                            }
-                        }
-                    ]
-                }
-            ]
-        })
+        self.assertEqual(
+            ast,
+            Node(NT.PROGRAM, children=[
+                Node(NT.VARIABLE_STATEMENT, children=[
+                    Node(NT.VARIABLE_DECLARATION, children=[
+                        Node(NT.IDENTIFIER, value='x'),
+                        Node(NT.NUMERIC_LITERAL, value=42)
+                    ])
+                ])
+            ])
+        )
     
+    def test_variable_declaration_and_assignment(self):
+        ast = self.ast_parser.parse('let x = 42; let y = x * 2;')
+        self.assertEqual(
+            ast, 
+            Node(NT.PROGRAM, children=[
+                Node(NT.VARIABLE_STATEMENT, children=[
+                    Node(NT.VARIABLE_DECLARATION, children=[
+                        Node(NT.IDENTIFIER, value='x'),
+                        Node(NT.NUMERIC_LITERAL, value=42)
+                    ])
+                ]),
+                Node(NT.VARIABLE_STATEMENT, children=[
+                    Node(NT.VARIABLE_DECLARATION, children=[
+                        Node(NT.IDENTIFIER, value='y'),
+                        Node(NT.BINARY_EXPRESSION, value='*', children=[
+                            Node(NT.IDENTIFIER, value='x'),
+                            Node(NT.NUMERIC_LITERAL, value=2)
+                        ])
+                    ])
+                ])
+            ])
+        )
+        
     def test_multiple_variable_declarations(self):
         ast = self.ast_parser.parse('''
             let x = 42;
             let y = 42;
             let c = x + y;
         ''')
-        self.assertDictEqual(ast, {
-            "type": NodeType.PROGRAM,
-            "body": [
-                {
-                    "type": NodeType.VARIABLE_STATEMENT,
-                    "declarations": [
-                        {
-                            "type": NodeType.VARIABLE_DECLARATION,
-                            "id": {
-                                "type": NodeType.IDENTIFIER,
-                                "name": "x"
-                            },
-                            "init": {
-                                "type": NodeType.NUMERIC_LITERAL,
-                                "value": 42
-                            }
-                        }
-                    ]
-                },
-                {
-                    "type": NodeType.VARIABLE_STATEMENT,
-                    "declarations": [
-                        {
-                            "type": NodeType.VARIABLE_DECLARATION,
-                            "id": {
-                                "type": NodeType.IDENTIFIER,
-                                "name": "y"
-                            },
-                            "init": {
-                                "type": NodeType.NUMERIC_LITERAL,
-                                "value": 42
-                            }
-                        }
-                    ]
-                },
-                {
-                    "type": NodeType.VARIABLE_STATEMENT,
-                    "declarations": [
-                        {
-                            "type": NodeType.VARIABLE_DECLARATION,
-                            "id": {
-                                "type": NodeType.IDENTIFIER,
-                                "name": "c"
-                            },
-                            "init": {
-                                "type": NodeType.BINARY_EXPRESSION,
-                                "operator": "+",
-                                "left": {
-                                    "type": NodeType.IDENTIFIER,
-                                    "name": "x"
-                                },
-                                "right": {
-                                    "type": NodeType.IDENTIFIER,
-                                    "name": "y"
-                                }
-                            }
-                        }
-                    ]
-                }
-            ]
-        })
+        self.assertEqual(
+            ast,
+            Node(NT.PROGRAM, children=[
+                Node(NT.VARIABLE_STATEMENT, children=[
+                    Node(NT.VARIABLE_DECLARATION, children=[
+                        Node(NT.IDENTIFIER, value='x'),
+                        Node(NT.NUMERIC_LITERAL, value=42)
+                    ])
+                ]),
+                Node(NT.VARIABLE_STATEMENT, children=[
+                    Node(NT.VARIABLE_DECLARATION, children=[
+                        Node(NT.IDENTIFIER, value='y'),
+                        Node(NT.NUMERIC_LITERAL, value=42)
+                    ])
+                ]),
+                Node(NT.VARIABLE_STATEMENT, children=[
+                    Node(NT.VARIABLE_DECLARATION, children=[
+                        Node(NT.IDENTIFIER, value='c'),
+                        Node(NT.BINARY_EXPRESSION, value='+', children=[
+                            Node(NT.IDENTIFIER, value='x'),
+                            Node(NT.IDENTIFIER, value='y')
+                        ])
+                    ])
+                ])
+            ])
+        )
         
     def test_variable_declaration_multiple_declarations(self):
-        ast = self.ast_parser.parse('let x, y;')
-        self.assertDictEqual(ast, {
-            "type": NodeType.PROGRAM,
-            "body": [
-                {
-                    "type": NodeType.VARIABLE_STATEMENT,
-                    "declarations": [
-                        {
-                            "type": NodeType.VARIABLE_DECLARATION,
-                            "id": {
-                                "type": NodeType.IDENTIFIER,
-                                "name": "x"
-                            },
-                            "init": None
-                        },
-                        {
-                            "type": NodeType.VARIABLE_DECLARATION,
-                            "id": {
-                                "type": NodeType.IDENTIFIER,
-                                "name": "y"
-                            },
-                            "init": None
-                        }
-                    ]
-                }
-            ]
-        })
-    
-    def test_variable_declaration_multiple_declarations_and_assignment(self):
         ast = self.ast_parser.parse('let x, y = 42;')
-        self.assertDictEqual(ast, {
-            "type": NodeType.PROGRAM,
-            "body": [
-                {
-                    "type": NodeType.VARIABLE_STATEMENT,
-                    "declarations": [
-                        {
-                            "type": NodeType.VARIABLE_DECLARATION,
-                            "id": {
-                                "type": NodeType.IDENTIFIER,
-                                "name": "x"
-                            },
-                            "init": None
-                        },
-                        {
-                            "type": NodeType.VARIABLE_DECLARATION,
-                            "id": {
-                                "type": NodeType.IDENTIFIER,
-                                "name": "y"
-                            },
-                            "init": {
-                                "type": NodeType.NUMERIC_LITERAL,
-                                "value": 42
-                            }
-                        }
-                    ]
-                }
-            ]
-        })
-
+        self.assertEqual(
+            ast,
+            Node(NT.PROGRAM, children=[
+                Node(NT.VARIABLE_STATEMENT, children=[
+                    Node(NT.VARIABLE_DECLARATION, children=[
+                        Node(NT.IDENTIFIER, value='x')
+                    ]),
+                    Node(NT.VARIABLE_DECLARATION, children=[
+                        Node(NT.IDENTIFIER, value='y'),
+                        Node(NT.NUMERIC_LITERAL, value=42)
+                    ])
+                ])
+            ]),
+        )
+    
 if __name__ == '__main__':
     unittest.main()

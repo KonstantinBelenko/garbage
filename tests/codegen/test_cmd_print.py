@@ -1,5 +1,5 @@
 from src.codegen import CodeGenerator
-from src.parser import NodeType
+from src.parser import NT
 import unittest
 
 class TestCodegenCmdPrint(unittest.TestCase):
@@ -11,12 +11,12 @@ class TestCodegenCmdPrint(unittest.TestCase):
     
     def test_print_string_literal(self):
         asm = self.codegen.generate({
-            'type': NodeType.PROGRAM,
+            'type': NT.PROGRAM,
             'body': [
                 {
-                    'type': NodeType.CMD_PRINT_STATEMENT,
+                    'type': NT.CMD_PRINT_STATEMENT,
                     'body': {
-                        'type': NodeType.STRING_LITERAL,
+                        'type': NT.STRING_LITERAL,
                         'value': 'Hi!'
                     }
                 }
@@ -57,12 +57,12 @@ class TestCodegenCmdPrint(unittest.TestCase):
     
     def test_print_numeric_literal(self):
         asm = self.codegen.generate({
-            'type': NodeType.PROGRAM,
+            'type': NT.PROGRAM,
             'body': [
                 {
-                    'type': NodeType.CMD_PRINT_STATEMENT,
+                    'type': NT.CMD_PRINT_STATEMENT,
                     'body': {
-                        'type': NodeType.NUMERIC_LITERAL,
+                        'type': NT.NUMERIC_LITERAL,
                         'value': 69,
                     }
                 }

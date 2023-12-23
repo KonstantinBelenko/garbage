@@ -1,5 +1,5 @@
 import unittest
-from src.parser import ASTParser, NodeType
+from src.parser import ASTParser, NT, Node
 
 class TestEmptyStatements(unittest.TestCase):
 
@@ -8,28 +8,22 @@ class TestEmptyStatements(unittest.TestCase):
     
     def test_empty_statement(self):
         ast = self.ast_parser.parse(';')
-        self.assertDictEqual(ast, {
-            'type': NodeType.PROGRAM,
-            'body': [
-                {
-                    'type': NodeType.EMPTY_STATEMENT,
-                }
-            ]
-        })
+        self.assertEqual(
+            ast, 
+            Node(NT.PROGRAM, children=[
+                Node(NT.EMPTY_STATEMENT)
+            ])
+        )
     
     def test_multiple_empty_statements(self):
         ast = self.ast_parser.parse(';;')
-        self.assertDictEqual(ast, {
-            'type': NodeType.PROGRAM,
-            'body': [
-                {
-                    'type': NodeType.EMPTY_STATEMENT,
-                },
-                {
-                    'type': NodeType.EMPTY_STATEMENT,
-                }
-            ]
-        })
+        self.assertEqual(
+            ast, 
+            Node(NT.PROGRAM, children=[
+                Node(NT.EMPTY_STATEMENT),
+                Node(NT.EMPTY_STATEMENT)
+            ])
+        )
 
 if __name__ == '__main__':
     unittest.main()

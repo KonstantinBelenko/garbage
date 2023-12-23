@@ -1,5 +1,5 @@
 import unittest
-from src.parser import ASTParser, NodeType
+from src.parser import ASTParser, NT, Node
 
 
 class TestAssignment(unittest.TestCase):
@@ -10,57 +10,34 @@ class TestAssignment(unittest.TestCase):
     
     def test_assignment(self):
         ast = self.ast_parser.parse('x = 42;')
-        self.assertDictEqual(ast, {
-            "type": NodeType.PROGRAM,
-            "body": [
-                {
-                    'type': NodeType.EXPRESSION_STATEMENT,
-                    'body': {
-                        'type': NodeType.ASSIGNMENT_EXPRESSION,
-                        'operator': '=',
-                        'left': {
-                            'type': NodeType.IDENTIFIER,
-                            'name': 'x'
-                        },
-                        'right': {
-                            'type': NodeType.NUMERIC_LITERAL,
-                            'value': 42
-                        }
-                    }
-                }
-            ]
-        })
+        self.assertEqual(
+            ast, 
+            Node(NT.PROGRAM, children=[
+                Node(NT.EXPRESSION_STATEMENT, children=[
+                    Node(NT.ASSIGNMENT_EXPRESSION, '=', children=[
+                        Node(NT.IDENTIFIER, value='x'),
+                        Node(NT.NUMERIC_LITERAL, value=42)
+                    ])
+                ])
+            ])
+        )
     
     def test_chained_assignment(self):
         ast = self.ast_parser.parse('x = y = 42;')
-        self.assertDictEqual(ast, {
-            "type": NodeType.PROGRAM,
-            "body": [
-                {
-                    "type": NodeType.EXPRESSION_STATEMENT,
-                    "body": {
-                        "type": NodeType.ASSIGNMENT_EXPRESSION,
-                        "operator": "=",
-                        "left": {
-                            "type": NodeType.IDENTIFIER,
-                            "name": "x"
-                        },
-                        "right": {
-                            "type": NodeType.ASSIGNMENT_EXPRESSION,
-                            "operator": "=",
-                            "left": {
-                                "type": NodeType.IDENTIFIER,
-                                "name": "y"
-                            },
-                            "right": {
-                                "type": NodeType.NUMERIC_LITERAL,
-                                "value": 42
-                            }
-                        }
-                    }
-                }
-            ]
-        })
+        self.assertEqual(
+            ast,
+            Node(NT.PROGRAM, children=[
+                Node(NT.EXPRESSION_STATEMENT, children=[
+                    Node(NT.ASSIGNMENT_EXPRESSION, value='=', children=[
+                        Node(NT.IDENTIFIER, 'x'),
+                        Node(NT.ASSIGNMENT_EXPRESSION, value='=', children=[
+                            Node(NT.IDENTIFIER, 'y'),
+                            Node(NT.NUMERIC_LITERAL, 42)
+                        ])
+                    ])
+                ])
+            ])
+        )
 
 if __name__ == '__main__':
     unittest.main()

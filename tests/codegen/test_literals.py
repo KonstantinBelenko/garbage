@@ -1,5 +1,5 @@
 from src.codegen import CodeGenerator
-from src.parser import NodeType
+from src.parser import NT
 import unittest
 
 class TestCodegenLiterals(unittest.TestCase):
@@ -14,9 +14,9 @@ class TestCodegenLiterals(unittest.TestCase):
             "type": "Program",
             "body": [
                 {
-                    "type": NodeType.EXPRESSION_STATEMENT,
+                    "type": NT.EXPRESSION_STATEMENT,
                     "body": {
-                        "type": NodeType.NUMERIC_LITERAL,
+                        "type": NT.NUMERIC_LITERAL,
                         "value": 42
                     }
                 }
@@ -42,9 +42,9 @@ class TestCodegenLiterals(unittest.TestCase):
             "type": "Program",
             "body": [
                 {
-                    "type": NodeType.EXPRESSION_STATEMENT,
+                    "type": NT.EXPRESSION_STATEMENT,
                     "body": {
-                        "type": NodeType.STRING_LITERAL,
+                        "type": NT.STRING_LITERAL,
                         "value": "hello world"
                     }
                 }

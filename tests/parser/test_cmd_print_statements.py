@@ -1,95 +1,4 @@
-# from src.shared_utils import verify
-
-# def test():
-    
-#     print('Running test_cmd_print_statements.py')
-    
-#     verify('_print("Hello, world!");', {
-#         "type": "Program",
-#         "body": [
-#             {
-#                 "type": "CmdPrintStatement",
-#                 "body": {
-#                     "type": "StringLiteral",
-#                     "value": "Hello, world!"
-#                 }
-#             }
-#         ]
-#     }, 'print("Hello, world!")', optimize=True)
-    
-#     verify('_print(42);', {
-#         "type": "Program",
-#         "body": [
-#             {
-#                 "type": "CmdPrintStatement",
-#                 "body": {
-#                     "type": "NumericLiteral",
-#                     "value": 42
-#                 }
-#             }
-#         ]
-#     }, 'print(42)', optimize=True)
-    
-#     verify('_print(5 + 15);', {
-#         "type": "Program",
-#         "body": [
-#             {
-#                 "type": "CmdPrintStatement",
-#                 "body": {
-#                     "type": "NumericLiteral",
-#                     "value": 20
-#                 }
-#             }
-#         ]
-#     }, 'print(5 + 15)', optimize=True)
-    
-#     verify('_print((5 * 5));', {
-#         "type": "Program",
-#         "body": [
-#             {
-#                 "type": "CmdPrintStatement",
-#                 "body": {
-#                     "type": "NumericLiteral",
-#                     "value": 25
-#                 }
-#             }
-#         ]
-#     }, 'print((5 * 5))', optimize=True)
-    
-#     verify('''
-#         let x = 55;
-#         _print(x);
-#         ''', {
-#             "type": "Program",
-#             "body": [
-#                 {
-#                     "type": "VariableDeclaration",
-#                     "declarations": [
-#                         {
-#                             "type": "VariableDeclarator",
-#                             "id": {
-#                                 "type": "Identifier",
-#                                 "name": "x"
-#                             },
-#                             "init": {
-#                                 "type": "NumericLiteral",
-#                                 "value": 55
-#                             }
-#                         }
-#                     ]
-#                 },
-#                 {
-#                     "type": "CmdPrintStatement",
-#                     "body": {
-#                         "type": "Identifier",
-#                         "name": "x"
-#                     }
-#                 }
-#             ]
-#         }, 'let x = 55; print(x)', optimize=True)
-
-
-from src.parser import ASTParser, NodeType
+from src.parser import ASTParser, NT, Node
 import unittest
 
 class TestCommandPrintStatement(unittest.TestCase):
@@ -99,18 +8,60 @@ class TestCommandPrintStatement(unittest.TestCase):
         self.maxDiff = None
     
     def test_print_string(self):
-        self.assertEqual(self.ast_parser.parse('_print("Hello, world!");'), {
-            "type": NodeType.PROGRAM,
-            "body": [
-                {
-                    "type": NodeType.CMD_PRINT_STATEMENT,
-                    "body": {
-                        "type": NodeType.STRING_LITERAL,
-                        "value": "Hello, world!"
-                    }
-                }
-            ]
-        })
-
+        ast = self.ast_parser.parse('_print("Hello, world!");')
+        self.assertEqual(
+            ast,
+            Node(NT.PROGRAM, children=[
+                Node(NT.CMD_PRINT_STATEMENT, children=[
+                    Node(NT.STRING_LITERAL, value='Hello, world!')
+                ])
+            ])
+        )
+    
+    def test_print_numeric_literal(self):
+        ast = self.ast_parser.parse('_print(42);')
+        self.assertEqual(
+            ast,
+            Node(NT.PROGRAM, children=[
+                Node(NT.CMD_PRINT_STATEMENT, children=[
+                    Node(NT.NUMERIC_LITERAL, value=42)
+                ])
+            ])
+        )
+    
+    def test_print_expression(self):
+        ast = self.ast_parser.parse('_print(5 + 15);')
+        self.assertEqual(
+            ast,
+            Node(NT.PROGRAM, children=[
+                Node(NT.CMD_PRINT_STATEMENT, children=[
+                    Node(NT.NUMERIC_LITERAL, value=20)
+                ])
+            ])
+        )
+    
+    def test_print_variable_expression(self):
+        ast = self.ast_parser.parse('''
+            let x = 55;
+            _print(x + 42);
+            ''')
+        self.assertEqual(
+            ast,
+            Node(NT.PROGRAM, children=[
+                Node(NT.VARIABLE_STATEMENT, children=[
+                    Node(NT.VARIABLE_DECLARATION, children=[
+                        Node(NT.IDENTIFIER, value='x'),
+                        Node(NT.NUMERIC_LITERAL, value=55)
+                    ])
+                ]),
+                Node(NT.CMD_PRINT_STATEMENT, children=[
+                    Node(NT.BINARY_EXPRESSION, value='+', children=[
+                        Node(NT.IDENTIFIER, value='x'),
+                        Node(NT.NUMERIC_LITERAL, value=42)
+                    ])
+                ])
+            ])
+        )
+    
 if __name__ == '__main__':
     unittest.main()

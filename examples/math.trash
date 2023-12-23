@@ -1,8 +1,11 @@
 let a = 50 / 10;
+let d = a;
 let b = 5 - 2;
 let c = a + b;
+
 
 _print(a);
 _print(b);
 _print(c);
+_print(d);
 _print("Done\n");

@@ -1,4 +1,4 @@
-from src.parser import ASTParser, NodeType
+from src.parser import ASTParser, NT, Node
 import unittest
 
 class TestLiterals(unittest.TestCase):
@@ -8,48 +8,36 @@ class TestLiterals(unittest.TestCase):
     
     def test_literal_int(self):
         ast = self.ast_parser.parse("42;")
-        self.assertDictEqual(ast, {
-            "type": NodeType.PROGRAM,
-            "body": [
-                {
-                    "type": NodeType.EXPRESSION_STATEMENT,
-                    "body": {
-                        "type": NodeType.NUMERIC_LITERAL,
-                        "value": 42
-                    }
-                }
-            ]
-        })
+        self.assertEqual(
+            ast, 
+            Node(NT.PROGRAM, children=[
+                Node(NT.EXPRESSION_STATEMENT, children=[
+                    Node(NT.NUMERIC_LITERAL, value=42)
+                ])
+            ])
+        )
 
     def test_literal_string(self):
         ast = self.ast_parser.parse('"hello world";')
-        self.assertDictEqual(ast, {
-            "type": NodeType.PROGRAM,
-            "body": [
-                {
-                    "type": NodeType.EXPRESSION_STATEMENT,
-                    "body": {
-                        "type": NodeType.STRING_LITERAL,
-                        "value": "hello world"
-                    }
-                }
-            ]
-        })
+        self.assertEqual(
+            ast,
+            Node(NT.PROGRAM, children=[
+                Node(NT.EXPRESSION_STATEMENT, children=[
+                    Node(NT.STRING_LITERAL, value="hello world")
+                ])
+            ])
+        )
 
     def test_literal_string_single_quote(self):
         ast = self.ast_parser.parse("'hello world';")
-        self.assertDictEqual(ast, {
-            "type": NodeType.PROGRAM,
-            "body": [
-                {
-                    "type": NodeType.EXPRESSION_STATEMENT,
-                    "body": {
-                        "type": NodeType.STRING_LITERAL,
-                        "value": "hello world"
-                    }
-                }
-            ]
-        })
+        self.assertEqual(
+            ast,
+            Node(NT.PROGRAM, children=[
+                Node(NT.EXPRESSION_STATEMENT, children=[
+                    Node(NT.STRING_LITERAL, value="hello world")
+                ])
+            ])
+        )
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,38 +1,5 @@
 from src.tokenizer import Tokenizer, Token
-from enum import Enum
-
-class NodeType(Enum):
-    PROGRAM = 'Program'
-    STATEMENT_LIST = 'StatementList'
-    STATEMENT = 'Statement'
-    EXPRESSION_STATEMENT = 'ExpressionStatement'
-    CMD_PRINT_STATEMENT = 'CmdPrintStatement'
-    BLOCK_STATEMENT = 'BlockStatement'
-    EMPTY_STATEMENT = 'EmptyStatement'
-    VARIABLE_DECLARATION = 'VariableDeclaration'
-    VARIABLE_STATEMENT = 'VariableStatement'
-    ASSIGNMENT_EXPRESSION = 'AssignmentExpression'
-    IDENTIFIER = 'Identifier'
-    BINARY_EXPRESSION = 'BinaryExpression'
-    NUMERIC_LITERAL = 'NumericLiteral'
-    STRING_LITERAL = 'StringLiteral'
-    
-    INTERMEDIATE_EXPRESSION = 'IntermediateExpression'
-    
-    def __eq__(self, other):
-        if not isinstance(other, NodeType):
-            return NotImplemented
-        return self.value == other.value
-
-    def __str__(self):
-        return self.value
-    
-    def __repr__(self):
-        return self.value
-    
-    def all():
-        return list(map(lambda c: c.value, NodeType))
-
+from .ast_node import NT, Node
 
 class ASTParser:
     
@@ -41,29 +8,28 @@ class ASTParser:
             'ParseMultiplicativeExpression': self.ParseMultiplicativeExpression,
             'ParsePrimaryExpression': self.ParsePrimaryExpression,
         }
+        self.optimizer = Optimizer()
     
-    def parse(self, string) -> dict:
+    def parse(self, string) -> Node:
         self.string = string
         self.tokenizer = Tokenizer(string)
         self.lookahead = self.tokenizer.get_next_token()
         
         program = self.ParseProgram()
-        program = self.collapse_static_expressions(program)
+        program = self.optimizer.collapse_static_binary_expressions(program)
         
         return program
     
-    def ParseProgram(self) -> dict:
+    # def ParseProgram(self) -> dict:
+    def ParseProgram(self) -> Node:
         '''
         Program
-            | StatementList
+            | Statement[]
             ;
         '''
-        return {
-            'type': NodeType.PROGRAM,
-            'body': self.ParseStatementList()
-        }
+        return Node(NT.PROGRAM, children=self.ParseStatementList())
         
-    def ParseStatementList(self, stop_lookahead=None) -> list[dict]:
+    def ParseStatementList(self, stop_lookahead=None) -> list[Node]:
         '''
         StatementList
             | Statement
@@ -77,7 +43,7 @@ class ASTParser:
         
         return statement_list
         
-    def ParseStatement(self) -> dict:
+    def ParseStatement(self) -> Node:
         '''
         Statement
             | ExpressionStatement
@@ -94,11 +60,11 @@ class ASTParser:
         elif self.lookahead.type == 'LET':
             return self.ParseVariableStatement()
         elif self.lookahead.type == '_PRINT':
-            return self.ParseCmdPrintStatement()
+            return self.CmdPrintStatement()
         else:
             return self.ParseExpressionStatement()
     
-    def ParseCmdPrintStatement(self) -> dict:
+    def CmdPrintStatement(self) -> Node:
         '''
         CmdPrintStatement
             | example: _print("hello");
@@ -111,13 +77,10 @@ class ASTParser:
         self.eat(')')
         self.eat(';')
         
-        return {
-            'type': NodeType.CMD_PRINT_STATEMENT,
-            'body': expression
-        }
+        return Node(NT.CMD_PRINT_STATEMENT, children=[expression])
 
     
-    def ParseVariableStatement(self) -> dict:
+    def ParseVariableStatement(self) -> Node:
         '''
         VariableStatement
             | 'let' VariableDeclarationList ';'
@@ -127,46 +90,41 @@ class ASTParser:
         declarations = self.ParseVariableDeclarationList()
         self.eat(';')
         
-        return {
-            'type': NodeType.VARIABLE_STATEMENT,
-            'declarations': declarations
-        }
+        return Node(NT.VARIABLE_STATEMENT, children=declarations)
     
-    def ParseVariableDeclarationList(self) -> list[dict]:
+    def ParseVariableDeclarationList(self) -> list[Node]:
         '''
         VariableDeclarationList
             | VariableDeclaration
             | VariableDeclarationList ',' VariableDeclaration
             ;
         '''
-        declarations = [self.ParseVariableDeclaration()]
+        declarations = [self.VariableDeclaration()]
         
         while self.lookahead.type == ',':
             self.eat(',')
-            declarations.append( self.ParseVariableDeclaration() )
+            declarations.append( self.VariableDeclaration() )
         
         return declarations
     
-    def ParseVariableDeclaration(self) -> dict:
+    def VariableDeclaration(self) -> Node:
         '''
         VariableDeclaration
             | Identifier
             | Identifier '=' Expression
             ;
         '''
-        identifier = self.ParseIdentifier()
+        identifier = self.Identifier()
 
         init = None        
+        out = [identifier]
         if self.lookahead.type != ';' and self.lookahead.type != ',':
             init = self.ParseVariableInitializer()
+            out.append(init)
 
-        return {
-            'type': NodeType.VARIABLE_DECLARATION,
-            'id': identifier,
-            'init': init,
-        }            
+        return Node(NT.VARIABLE_DECLARATION, children=out)
     
-    def ParseVariableInitializer(self) -> dict:
+    def ParseVariableInitializer(self) -> Node:
         '''
         VariableInitializer
             | '=' Expression
@@ -175,16 +133,16 @@ class ASTParser:
         self.eat('SIMPLE_ASSIGN')
         return self.ParseAssignmentExpression()
     
-    def ParseEmptyStatement(self) -> dict:
+    def ParseEmptyStatement(self) -> Node:
         '''
         EmptyStatement
             | ';'
             ;
         '''
         self.eat(';')
-        return { 'type': NodeType.EMPTY_STATEMENT }
+        return Node(NT.EMPTY_STATEMENT)
     
-    def ParseExpressionStatement(self) ->  dict:
+    def ParseExpressionStatement(self) ->  Node:
         '''
         ExpressionStatement
             | Expression
@@ -193,12 +151,9 @@ class ASTParser:
         
         expression = self.ParseExpression()
         self.eat(';')
-        return {
-            'type': NodeType.EXPRESSION_STATEMENT,
-            'body': expression
-        }
+        return Node(NT.EXPRESSION_STATEMENT, children=[expression])
         
-    def ParseBlockStatement(self) -> dict:
+    def ParseBlockStatement(self) -> Node:
         '''
         BlockStatement
             | '{' OptStatementList '}'
@@ -214,12 +169,9 @@ class ASTParser:
         
         self.eat('}')
         
-        return {
-            'type': NodeType.BLOCK_STATEMENT,
-            'body': body
-        }
+        return Node(NT.BLOCK_STATEMENT, children=body)
         
-    def ParseExpression(self) -> dict:
+    def ParseExpression(self) -> Node:
         '''
         Expression
             | AssignmentExpression
@@ -228,7 +180,7 @@ class ASTParser:
         
         return self.ParseAssignmentExpression()
     
-    def ParseAssignmentExpression(self) -> dict:
+    def ParseAssignmentExpression(self) -> Node:
         '''
         AssignmentExpression
             | AdditiveExpression
@@ -239,38 +191,34 @@ class ASTParser:
         if not self._isAssignmentOperator(self.lookahead):
             return left
         
-        return {
-            'type': NodeType.ASSIGNMENT_EXPRESSION,
-            'operator': self.ParseAssignmentOperator().value,
-            'left': self._checkValidAssignmentTarget(left),
-            'right': self.ParseAssignmentExpression()
-        }
+        operator = self.ParseAssignmentOperator()
+        left = self._checkValidAssignmentTarget(left)
+        right = self.ParseAssignmentExpression()
+        
+        return Node(NT.ASSIGNMENT_EXPRESSION, operator.value, [left, right])
     
-    def ParseLeftHandSideExpression(self) -> dict:
+    def ParseLeftHandSideExpression(self) -> Node:
         '''
         LeftHandSideExpression
             | Identifier
             ;
         '''
-        return self.ParseIdentifier()
+        return self.Identifier()
     
-    def ParseIdentifier(self) -> dict:
+    def Identifier(self) -> Node:
         '''
         Identifier
             | IDENTIFIER
             ;
         '''
         token = self.eat('IDENTIFIER')
-        return {
-            'type': NodeType.IDENTIFIER,
-            'name': token.value
-        }
+        return Node(NT.IDENTIFIER, value=token.value)
         
-    def _checkValidAssignmentTarget(self, expression: dict) -> dict:
-        if expression['type'] == NodeType.IDENTIFIER:
-            return expression
+    def _checkValidAssignmentTarget(self, target_node: Node) -> Node:
+        if target_node == NT.IDENTIFIER:
+            return target_node
         else:
-            raise Exception('Invalid left-hand side in assignment')
+            raise Exception('Invalid left side in assignment')
     
     def _isAssignmentOperator(self, token: Token) -> bool:
         return token.type == 'SIMPLE_ASSIGN' or token.type == 'COMPLEX_ASSIGN'
@@ -289,7 +237,7 @@ class ASTParser:
             return self.eat('SIMPLE_ASSIGN')
         return self.eat('COMPLEX_ASSIGN')
     
-    def ParseAdditiveExpression(self) -> dict:
+    def ParseAdditiveExpression(self) -> Node:
         '''
         AdditiveExpression
             | Literal
@@ -298,22 +246,16 @@ class ASTParser:
         '''
         return self._BinaryExpression('ParseMultiplicativeExpression', 'ADDITIVE_OPERATOR')
 
-    def _BinaryExpression(self, builderName, operatorToken):
+    def _BinaryExpression(self, builderName: str, operatorToken: str) -> Node:
         left = self.builders[builderName]()
         while self.lookahead.type == operatorToken:
             operator = self.eat(operatorToken).value
             right = self.builders[builderName]()
-            
-            left = {
-                'type': NodeType.BINARY_EXPRESSION,
-                'operator': operator,
-                'left': left,
-                'right': right
-            }
+            left = Node(NT.BINARY_EXPRESSION, operator, [left, right])
         
         return left
 
-    def ParseMultiplicativeExpression(self) -> dict:
+    def ParseMultiplicativeExpression(self) -> Node:
         '''
         MultiplicativeExpression
             | Literal
@@ -322,7 +264,7 @@ class ASTParser:
         '''
         return self._BinaryExpression('ParsePrimaryExpression', 'MULTIPLICATIVE_OPERATOR')
     
-    def ParsePrimaryExpression(self) -> dict:
+    def ParsePrimaryExpression(self) -> Node:
         '''
         PrimaryExpression
             | Literal
@@ -342,7 +284,7 @@ class ASTParser:
     def _isLiteral(self, token: Token) -> bool:
         return token == 'NUMBER' or token == 'STRING'
     
-    def ParseParenthesizedExpression(self) -> dict:
+    def ParseParenthesizedExpression(self) -> Node:
         '''
         ParenthesizedExpression
             | '(' Expression ')'
@@ -354,7 +296,7 @@ class ASTParser:
         
         return expression
     
-    def ParseLiteral(self) -> dict:
+    def ParseLiteral(self) -> Node:
         '''
         Literal
             | NumericLiteral
@@ -363,36 +305,29 @@ class ASTParser:
         '''
         
         if self.lookahead.type == 'NUMBER':
-            return self.ParseNumericLiteral()
+            return self.NumericLiteral()
         elif self.lookahead.type == 'STRING':
-            return self.ParseStringLiteral()
+            return self.StringLiteral()
         else:
             raise Exception(f'Unexpected token {self.lookahead.type}')
         
-    def ParseStringLiteral(self) -> dict:
+    def StringLiteral(self) -> Node:
         '''
         StringLiteral
             | '"' [a-zA-Z0-9]* '"'
             ;
         '''
         token: Token = self.eat('STRING')
-        return {
-            'type': NodeType.STRING_LITERAL,
-            'value': token.value[1:-1]
-        }
+        return Node(NT.STRING_LITERAL, value=token.value[1:-1])
         
-    def ParseNumericLiteral(self) -> dict:
+    def NumericLiteral(self) -> Node:
         '''
         NumericLiteral
             | [0-9]+
             ;
         '''
-        
         token: Token = self.eat('NUMBER')
-        return {
-            'type': NodeType.NUMERIC_LITERAL,
-            'value': int(token.value)
-        }
+        return Node(NT.NUMERIC_LITERAL, value=int(token.value))
     
     def eat(self, type) -> Token:
         if self.lookahead is None:
@@ -407,44 +342,35 @@ class ASTParser:
         
         return token
     
-    
-    @staticmethod
-    def collapse_static_expressions(node):
-        if not isinstance(node, dict):
+
+class Optimizer:
+
+    def collapse_static_binary_expressions(self, node: Node):
+        if not isinstance(node, Node):
             return node
-
-        for key, value in node.items():
-            if isinstance(value, list):
-                node[key] = [ASTParser.collapse_static_expressions(item) for item in value]
-            elif isinstance(value, dict):
-                node[key] = ASTParser.collapse_static_expressions(value)
-
-        if ASTParser.is_static_expression(node):
-            return ASTParser.evaluate_static_expression(node)
         
+        for i, child in enumerate(node.children):
+            node.children[i] = self.collapse_static_binary_expressions(child)
+
+        is_static_expr = self.is_static_expression(node)
+        if is_static_expr:
+            return self.evaluate_static_expression(node)
+            
         return node
     
-    @staticmethod
-    def is_static_expression(node: dict) -> bool:
-        if node['type'] != NodeType.BINARY_EXPRESSION:
+    def is_static_expression(self, node: Node) -> bool:
+        if node.type != NT.BINARY_EXPRESSION:
             return False
-        if not isinstance(node['left'], dict) or not isinstance(node['right'], dict):
+        if not isinstance(node.left(), Node) or not isinstance(node.right(), Node):
             return False
-        return node['left']['type'] == NodeType.NUMERIC_LITERAL and node['right']['type'] == NodeType.NUMERIC_LITERAL
+
+        return node.left().type == NT.NUMERIC_LITERAL and node.right().type == NT.NUMERIC_LITERAL
     
-    @staticmethod
-    def evaluate_static_expression(node: dict) -> dict:
-        left_value = node['left']['value']
-        right_value = node['right']['value']
-        operator = node['operator']
-        result = ASTParser.apply_operator(left_value, right_value, operator)
-        return {
-            'type': NodeType.NUMERIC_LITERAL,
-            'value': result
-        }
+    def evaluate_static_expression(self, node: Node) -> dict:
+        result = self.apply_operator(node.left().value, node.right().value, node.operator())
+        return Node(NT.NUMERIC_LITERAL, value=result)
     
-    @staticmethod
-    def apply_operator(left: int, right: int, operator: str) -> int:
+    def apply_operator(self, left: int, right: int, operator: str) -> int:
         if operator == '+':
             return left + right
         elif operator == '-':
@@ -452,6 +378,6 @@ class ASTParser:
         elif operator == '*':
             return left * right
         elif operator == '/':
-            return left // right  # Integer division
+            return left // right
         else:
             raise Exception(f'Unknown operator: {operator}')

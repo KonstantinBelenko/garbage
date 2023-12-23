@@ -1,5 +1,5 @@
 from src.codegen import CodeGenerator
-from src.parser import NodeType
+from src.parser import NT
 import unittest
 
 class TestCodegenStatementList(unittest.TestCase):
@@ -11,26 +11,26 @@ class TestCodegenStatementList(unittest.TestCase):
     
     def test_statement_list(self):
         asm = self.codegen.generate({
-            'type': NodeType.PROGRAM,
+            'type': NT.PROGRAM,
             'body': [
                 {
-                    'type': NodeType.EXPRESSION_STATEMENT,
+                    'type': NT.EXPRESSION_STATEMENT,
                     'body': {
-                        'type': NodeType.STRING_LITERAL,
+                        'type': NT.STRING_LITERAL,
                         'value': 'Hello World!'
                     }
                 },
                 {
-                    'type': NodeType.EXPRESSION_STATEMENT,
+                    'type': NT.EXPRESSION_STATEMENT,
                     'body': {
-                        'type': NodeType.NUMERIC_LITERAL,
+                        'type': NT.NUMERIC_LITERAL,
                         'value': 42
                     }
                 },
                 {
-                    'type': NodeType.CMD_PRINT_STATEMENT,
+                    'type': NT.CMD_PRINT_STATEMENT,
                     'body': {
-                        'type': NodeType.STRING_LITERAL,
+                        'type': NT.STRING_LITERAL,
                         'value': 'Hi!'
                     }
                 }

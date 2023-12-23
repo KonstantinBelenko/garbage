@@ -1,4 +1,4 @@
-from src.parser import NodeType
+from src.parser import NT
 
 
 class CodeGenerator:
@@ -32,7 +32,7 @@ class CodeGenerator:
 
         def handle_node(node: dict):
             node_type = node['type']
-            if node_type == NodeType.VARIABLE_DECLARATION:
+            if node_type == NT.VARIABLE_DECLARATION:
                 self.var_name_to_node[node['id']['name']] = node
                 
                 var_name = node['id']['name']
@@ -45,7 +45,7 @@ class CodeGenerator:
                 else:
                     handle_init(init, var_name)
             
-            elif node_type == NodeType.NUMERIC_LITERAL:
+            elif node_type == NT.NUMERIC_LITERAL:
                 if 'asm_literal_label' not in node:
                     literal_label = f'literal_{self.literal_counter}'
                     node['asm_literal_label'] = literal_label
@@ -56,7 +56,7 @@ class CodeGenerator:
                         '%s: .word %s' % (literal_label, node['value'],)
                     ])
             
-            elif node_type == NodeType.STRING_LITERAL:
+            elif node_type == NT.STRING_LITERAL:
                 literal_label = f'literal_{self.literal_counter}'
                 node['asm_literal_label'] = literal_label
                 self.literals_map[node['value']] = literal_label
@@ -67,12 +67,13 @@ class CodeGenerator:
                 self.literal_counter += 1
         
         def handle_init(init: dict, var_name: str):
-            if init['type'] == NodeType.NUMERIC_LITERAL:
+            if init['type'] == NT.NUMERIC_LITERAL:
+                print('init', init)
                 data_section.extend([
                     '.align 3',
                     '%s: .word %s' % (var_name, init['value'],)
                 ])
-            elif init['type'] == NodeType.STRING_LITERAL:
+            elif init['type'] == NT.STRING_LITERAL:
                 data_section.extend([
                     '.align 3',
                     '%s: .asciz "%s"' % (var_name, init['value'],)
@@ -86,9 +87,11 @@ class CodeGenerator:
         
         def handle_node(node: dict):
             node_type = node.get('type')
-            if node_type == NodeType.CMD_PRINT_STATEMENT:
+            if node_type == NT.CMD_PRINT_STATEMENT:
                 self.required_commands.add('print_string')
                 text_section.extend(self._generate_cmd_print(node))
+            elif node_type == NT.VARIABLE_DECLARATION:
+                text_section.extend(self._generate_variable_declaration(node))
         
         self._traverse_ast(ast, handle_node)
         text_section.extend(['mov x0, #0', 'mov x16, #1', 'svc 0' ])
@@ -104,20 +107,25 @@ class CodeGenerator:
                     if isinstance(item, dict):
                         self._traverse_ast(item, handler)
 
+    def _generate_variable_declaration(self, node: dict) -> list[str]:
+        # Cases of dynamic variable declaration:
+        # | A = B
+        # | A = EXPRESSION
+        raise NotImplementedError('Variable declaration not implemented')
 
     def _generate_cmd_print(self, node: dict) -> list[str]:
         print_instructions = []
         value_node = node['body']
         value_node_type = value_node.get('type')
 
-        if value_node_type == NodeType.STRING_LITERAL:
+        if value_node_type == NT.STRING_LITERAL:
             literal_label = self.literals_map.get(value_node.get('value'))
             if literal_label:
                 print_instructions.extend(self._generate_print_string_asm(literal_label))
             else:
                 raise ValueError('String literal not found in literals map')
         
-        elif value_node_type == NodeType.NUMERIC_LITERAL:
+        elif value_node_type == NT.NUMERIC_LITERAL:
             self.required_commands.add('itoa')
             literal_label = self.literals_map.get(value_node.get('value'))
             if literal_label:
@@ -125,25 +133,23 @@ class CodeGenerator:
             else:
                 raise ValueError('Numeric literal not found in literals map')
         
-        elif value_node_type == NodeType.IDENTIFIER:
+        elif value_node_type == NT.IDENTIFIER:
             var_name = value_node.get('name')
             var_node = self.var_name_to_node.get(var_name)
             var_type = var_node.get('init').get('type')
-            if var_type == NodeType.STRING_LITERAL:
+            if var_type == NT.STRING_LITERAL:
                 literal_label = self.literals_map.get(var_node.get('init').get('value'))
                 if literal_label:
                     print_instructions.extend(self._generate_print_string_asm(literal_label))
                 else:
                     raise ValueError('String literal not found in literals map')
-            elif var_type == NodeType.NUMERIC_LITERAL:
+            elif var_type == NT.NUMERIC_LITERAL:
                 self.required_commands.add('itoa')
                 literal_label = self.literals_map.get(var_node.get('init').get('value'))
                 if literal_label:
                     print_instructions.extend(self._generate_print_int_asm(literal_label))
                 else:
                     raise ValueError('Numeric literal not found in literals map')
-            
-        
         else:
             raise ValueError('Unsupported print statement')
 

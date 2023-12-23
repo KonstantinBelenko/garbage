@@ -1,5 +1,5 @@
 from src.codegen import CodeGenerator
-from src.parser import NodeType
+from src.parser import NT
 import unittest
 
 class TestCodegenVariables(unittest.TestCase):
@@ -8,7 +8,65 @@ class TestCodegenVariables(unittest.TestCase):
         self.codegen = CodeGenerator()
         self.maxDiff = None
 
-    
+    def test_variable_assign_to_another_variable(self):
+        return
+        asm = self.codegen.generate({
+            'type': NT.PROGRAM,
+            'body': [
+                {
+                    'type': NT.VARIABLE_STATEMENT,
+                    'declarations': [
+                        {
+                            'type': NT.VARIABLE_DECLARATION,
+                            'id': {
+                                'type': NT.IDENTIFIER,
+                                'name': 'x'
+                            },
+                            'init': {
+                                'type': NT.NUMERIC_LITERAL,
+                                'value': '10'
+                            }
+                        }
+                    ]
+                },
+                {
+                    'type': NT.VARIABLE_STATEMENT,
+                    'declarations': [
+                        {
+                            'type': NT.VARIABLE_DECLARATION,
+                            'id': {
+                                'type': NT.IDENTIFIER,
+                                'name': 'y'
+                            },
+                            'init': {
+                                'type': NT.IDENTIFIER,
+                                'value': 'x'
+                            }
+                        }
+                    ]
+                }
+            ]
+        })
+        self.assertEqual(asm, [
+            '.global _main',
+            '.data',
+            '.align 3',
+            'x: .word 10',
+            '.align 3',
+            'y: .word 0',
+            '.text',
+            '_main:',
+            'adrp x0, x@PAGE',
+            'add x0, x0, x@PAGEOFF',
+            'ldr w1, [x0]',
+            'adrp x0, y@PAGE',
+            'add x0, x0, y@PAGEOFF',
+            'str w1, [x0]',
+            'mov x0, #0',
+            'mov x16, #1',
+            'svc 0',
+        ])
+
 if __name__ == '__main__':
     unittest.main()
 
