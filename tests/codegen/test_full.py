@@ -39,6 +39,8 @@ class TestCodegenFull(unittest.TestCase):
                 'literal_0: .word 42',
                 '.text',
                 '_main:',
+                'adrp x0, literal_0@PAGE',
+                'ldr x0, [x0, literal_0@PAGEOFF]',
                 'b terminate_program'
             ],
             ast

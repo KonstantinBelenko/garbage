@@ -1,5 +1,5 @@
 from src.parser import ASTParser
-from src.codegen import CodeGenerator
+from src.codegen import CodeGenerator, CodeGen_v2
 from src.shared_utils import assemble, link
 
 from typing import Optional
@@ -9,7 +9,7 @@ import os
 def compile(code: str, asm_path: Optional[str] = None, obj_path: Optional[str] = None, out_path: Optional[str] = None):
 
     parser = ASTParser()
-    codegen = CodeGenerator()
+    codegen = CodeGen_v2()
     
     ast = parser.parse(code)
     assembly: list[str] = codegen.generate(ast)
