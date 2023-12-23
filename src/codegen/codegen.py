@@ -1,6 +1,141 @@
-from src.parser import NT
+from src.parser import NT, Node
 
+class StaticFunctions:
+    
+    @staticmethod
+    def terminate_program() -> list[str]:
+        return [
+            'terminate_program:',
+            'mov x0, #0',
+            'mov x16, #1',
+            'svc 0',
+        ]
+        
+    @staticmethod
+    def print_string() -> list[str]:
+        return [
+            'print_string:',
+            'ldrb w2, [x1]',
+            'cmp w2, #0',
+            'beq _print_string_end',
+            'mov x3, x1',
+            'mov x0, 1',
+            'mov x2, 1',
+            'mov x16, 4',
+            'svc 0',
+            'mov x1, x3',
+            'add x1, x1, #1',
+            'b print_string',
+            '_print_string_end:',
+            'ret',
+        ]
 
+static_funcions = {
+    'terminate_program': StaticFunctions.terminate_program,
+}
+
+class CodeGen_v2:
+    
+    def __init__(self) -> None:
+        self.used_commands = set()
+        self.global_label_counter = 0
+
+    def generate(self, ast: dict) -> list[str]:
+        asm = ['.global _main']
+        self.used_commands = set()
+        self.used_commands.add('terminate_program')
+        self.global_label_counter = 0
+        
+        data_run = self.generate_data(ast)
+        text_run = self.generate_text(ast)
+        
+        for cmd in self.used_commands:
+            asm.extend(static_funcions[cmd]())
+            
+        asm.extend(data_run)
+        asm.extend(text_run)
+        
+        return asm
+
+    def generate_data(self, node: Node) -> list[str]:
+        data_asm = []
+        data_asm.append('.data')
+        
+        print('Descent into tree')
+        for child in node.children:
+            print('Root Branch:', child.type)
+            asm, node = self.generate_data_descent(child)
+            data_asm.extend(asm)
+        
+        print('Root return from descent. asm:', data_asm, '\n\n')
+        return data_asm
+    
+    def generate_data_descent(self, node: Node) -> tuple[list[str], Node]:
+        asm = []
+        
+        for i, child in enumerate(node.children):
+            print('branch:', child.type)
+            code, node = self.generate_data_node(child)
+            asm.extend(code)
+
+        if node:
+            new_asm, node = self.generate_data_node(node)
+            asm.extend(new_asm)
+        
+        print('Return from descent. asm:', asm)
+
+        return asm, node
+
+    def generate_data_node(self, node: Node) -> tuple[list[str], Node]:
+        asm = []
+        print('generating data node:', node.type)
+        if node.type == NT.NUMERIC_LITERAL:
+            label_name = self.gen_label_name()
+            node.label_name = label_name
+            asm.extend([
+                '.align 3',
+                '%s: .word %s' % (label_name, node.value,)
+            ])
+            return asm, None
+
+        elif node.type == NT.STRING_LITERAL:
+            label_name = self.gen_label_name()
+            node.label_name = label_name
+            asm.extend([
+                '.align 3',
+                '%s: .asciz "%s"' % (label_name, node.value,)
+            ])
+            return asm, None
+    
+    def generate_text(self, node: Node) -> list[str]:
+        test_asm = []
+        test_asm.append('.text')
+        test_asm.append('_main:')
+        
+        # ...
+        
+        test_asm.append('b terminate_program')
+        return test_asm
+        
+    
+    def generate_text_node(self, node: Node) -> list[str]:
+        asm = []
+        if node.type == NT.NUMERIC_LITERAL:
+            asm.extend([
+                'adrp x0, %s@PAGE' % node.asm_literal_label,
+                'ldr x0, [x0, %s@PAGEOFF]' % node.asm_literal_label,
+            ])
+        elif node.type == NT.STRING_LITERAL:
+            asm.extend([
+                'adrp x0, %s@PAGE' % node.asm_literal_label,
+                'add x0, x0, %s@PAGEOFF' % node.asm_literal_label,
+            ])
+        return asm
+    
+    def gen_label_name(self) -> str:
+        name = 'literal_%s' % self.global_label_counter
+        self.global_label_counter += 1
+        return name
 class CodeGenerator:
     
     def __init__(self) -> None:

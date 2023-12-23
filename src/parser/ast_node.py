@@ -42,7 +42,7 @@ class Node:
         
         if not isinstance(children, list):
             raise Exception('Children must be a list')
-        self.children = children if children is not None else []
+        self.children: list[Node] = children if children is not None else []
         
     def __str__(self) -> str:
         return str(self.__json__())
