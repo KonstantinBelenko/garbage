@@ -1,208 +1,61 @@
-# from src.codegen import CodeGenerator
-# from src.parser import NT
-# import unittest
+from src.codegen import Codegen_V3
+from src.parser import NT, Node, ASTParser
+import unittest
 
-# class TestCodegenVariables(unittest.TestCase):
+if 'unittest.util' in __import__('sys').modules:
+    # Show full diff in self.assertEqual.
+    __import__('sys').modules['unittest.util']._MAX_LENGTH = 999999999
 
-#     def setUp(self):
-#         self.codegen = CodeGenerator()
-#         self.maxDiff = None
+class TestCodegenVariables(unittest.TestCase):
 
-#     def test_variable_assign_to_another_variable(self):
-#         return
-#         asm = self.codegen.generate({
-#             'type': NT.PROGRAM,
-#             'body': [
-#                 {
-#                     'type': NT.VARIABLE_STATEMENT,
-#                     'declarations': [
-#                         {
-#                             'type': NT.VARIABLE_DECLARATION,
-#                             'id': {
-#                                 'type': NT.IDENTIFIER,
-#                                 'name': 'x'
-#                             },
-#                             'init': {
-#                                 'type': NT.NUMERIC_LITERAL,
-#                                 'value': '10'
-#                             }
-#                         }
-#                     ]
-#                 },
-#                 {
-#                     'type': NT.VARIABLE_STATEMENT,
-#                     'declarations': [
-#                         {
-#                             'type': NT.VARIABLE_DECLARATION,
-#                             'id': {
-#                                 'type': NT.IDENTIFIER,
-#                                 'name': 'y'
-#                             },
-#                             'init': {
-#                                 'type': NT.IDENTIFIER,
-#                                 'value': 'x'
-#                             }
-#                         }
-#                     ]
-#                 }
-#             ]
-#         })
-#         self.assertEqual(asm, [
-#             '.global _main',
-#             '.data',
-#             '.align 3',
-#             'x: .word 10',
-#             '.align 3',
-#             'y: .word 0',
-#             '.text',
-#             '_main:',
-#             'adrp x0, x@PAGE',
-#             'add x0, x0, x@PAGEOFF',
-#             'ldr w1, [x0]',
-#             'adrp x0, y@PAGE',
-#             'add x0, x0, y@PAGEOFF',
-#             'str w1, [x0]',
-#             'mov x0, #0',
-#             'mov x16, #1',
-#             'svc 0',
-#         ])
+    def setUp(self):
+        self.parser = ASTParser()
+        self.maxDiff = None
+        
+    def test_variable(self):
+        # let x = 42;
+        # let y = x;
+        # let z = x + y;
+        asm = Codegen_V3(Node(NT.PROGRAM, children=[
+            Node(NT.VARIABLE_STATEMENT, children=[
+                Node(NT.VARIABLE_DECLARATION, children=[
+                    Node(NT.IDENTIFIER, 'x'),
+                    Node(NT.NUMERIC_LITERAL, '42')
+                ])
+            ]),
+            Node(NT.VARIABLE_STATEMENT, children=[
+                Node(NT.VARIABLE_DECLARATION, children=[
+                    Node(NT.IDENTIFIER, 'y'),
+                    Node(NT.IDENTIFIER, 'x')
+                ])
+            ]),
+            Node(NT.VARIABLE_STATEMENT, children=[
+                Node(NT.VARIABLE_DECLARATION, children=[
+                    Node(NT.IDENTIFIER, 'z'),
+                    Node(NT.BINARY_EXPRESSION, '+', children=[
+                        Node(NT.IDENTIFIER, 'x'),
+                        Node(NT.IDENTIFIER, 'y')
+                    ])
+                ])
+            ])
+        ])).compile()
+        
+        self.assertEqual(asm, [
+            '.global: main',
+            'main:',
+            'sub sp, sp, #16',
+            'mov w0, #42',
+            'str w0, [sp, 12]',
+            'ldr w0, [sp, 12]',
+            'str w0, [sp, 8]',
+            'ldr w1, [sp, 12]',
+            'ldr w0, [sp, 8]',
+            'add w0, w1, w0',
+            'str w0, [sp, 4]',
+            'mov w0, #0',
+            'add sp, sp, #16',
+            'ret',
+        ])
 
-# if __name__ == '__main__':
-#     unittest.main()
-
-# # def test():
-# #     print("Running codegen variables test...")
-    
-# #     verify_codegen('let x = 42;', [
-# #         '.global _main',
-# #         '.align 3',
-# #         '',
-# #         '.data',
-# #         '    x: .word 42',
-# #         '',
-# #         '.text',
-# #         '_main:',
-# #         '    mov x0, #0',
-# #         '    mov x16, #1',
-# #         '    svc 0',
-# #     ], 'Static Numeric Literal Assignment', optimize=True)
-    
-# #     verify_codegen('let x = 5 + 5 * 4;', [
-# #         '.global _main',
-# #         '.align 3',
-# #         '',
-# #         '.data',
-# #         '    x: .word 25',
-# #         '',
-# #         '.text',
-# #         '_main:',
-# #         '    mov x0, #0',
-# #         '    mov x16, #1',
-# #         '    svc 0',
-# #     ], 'Static Numeric Expression Assignment', optimize=True)
-    
-# #     verify_codegen('''
-# #         let x = 42;
-# #         let y = 42;
-# #         let c = x + y;
-# #     ''', [
-# #         '.global _main',
-# #         '.align 3',
-# #         '',
-# #         '.data',
-# #         '    x: .word 42',
-# #         '    y: .word 42',
-# #         '    c: .word 0',
-# #         '',
-# #         '.text',
-# #         '_main:',
-# #         '    adrp x0, x@PAGE',
-# #         '    add x0, x0, x@PAGEOFF',
-# #         '    ldr w1, [x0]',
-# #         '    adrp x2, y@PAGE',
-# #         '    add x2, x2, y@PAGEOFF',
-# #         '    ldr w3, [x2]',
-# #         '    add w5, w1, w3',
-# #         '    adrp x0, c@PAGE',
-# #         '    add x0, x0, c@PAGEOFF',
-# #         '    str w5, [x0]',
-# #         '    mov x0, #0',
-# #         '    mov x16, #1',
-# #         '    svc 0',
-# #     ], 'Dynamic Variable Assignment', optimize=True)
-    
-# #     verify_codegen('''
-# #         let x = 42;
-# #         let y = 42;
-# #         let c = x + y + x;
-# #     ''', [
-# #         '.global _main',
-# #         '.align 3',
-# #         '',
-# #         '.data',
-# #         '    x: .word 42',
-# #         '    y: .word 42',
-# #         '    c: .word 0',
-# #         '',
-# #         '.text',
-# #         '_main:',
-# #         '    adrp x0, x@PAGE',
-# #         '    add x0, x0, x@PAGEOFF',
-# #         '    ldr w1, [x0]',
-# #         '    adrp x2, y@PAGE',
-# #         '    add x2, x2, y@PAGEOFF',
-# #         '    ldr w3, [x2]',
-# #         '    add w5, w1, w3',
-# #         '    adrp x2, x@PAGE',
-# #         '    add x2, x2, x@PAGEOFF',
-# #         '    ldr w3, [x2]',
-# #         '    add w5, w5, w3',
-# #         '    adrp x0, c@PAGE',
-# #         '    add x0, x0, c@PAGEOFF',
-# #         '    str w5, [x0]',
-# #         '    mov x0, #0',
-# #         '    mov x16, #1',
-# #         '    svc 0',
-# #     ], 'Dynamic Variable Assignment with 2 variables 3 times chained.', optimize=True)
-    
-# #     verify_codegen('''
-# #         let x = 2;
-# #         let y = 3;
-# #         let c = x + y;
-# #         let d = c + x;
-# #     ''', [
-# #         '.global _main',
-# #         '.align 3',
-# #         '',
-# #         '.data',
-# #         '    x: .word 2',
-# #         '    y: .word 3',
-# #         '    c: .word 0',
-# #         '    d: .word 0',
-# #         '',
-# #         '.text',
-# #         '_main:',
-# #         '    adrp x0, x@PAGE',
-# #         '    add x0, x0, x@PAGEOFF',
-# #         '    ldr w1, [x0]',
-# #         '    adrp x2, y@PAGE',
-# #         '    add x2, x2, y@PAGEOFF',
-# #         '    ldr w3, [x2]',
-# #         '    add w5, w1, w3',
-# #         '    adrp x0, c@PAGE',
-# #         '    add x0, x0, c@PAGEOFF',
-# #         '    str w5, [x0]',
-# #         '    adrp x0, c@PAGE',
-# #         '    add x0, x0, c@PAGEOFF',
-# #         '    ldr w1, [x0]',
-# #         '    adrp x2, x@PAGE',
-# #         '    add x2, x2, x@PAGEOFF',
-# #         '    ldr w3, [x2]',
-# #         '    add w5, w1, w3',
-# #         '    adrp x0, d@PAGE',
-# #         '    add x0, x0, d@PAGEOFF',
-# #         '    str w5, [x0]',
-# #         '    mov x0, #0',
-# #         '    mov x16, #1',
-# #         '    svc 0',
-# #     ], 'Dynamic Variable Assignment with 2 variables 2 times chained.', optimize=True)
+if __name__ == '__main__':
+    unittest.main()
