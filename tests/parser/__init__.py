@@ -3,6 +3,7 @@ from .test_block_statements import *
 from .test_cmd_print_statements import *
 from .test_empty_statements import *
 from .test_equality import *
+from .test_func_declaration import *
 from .test_if_statement import *
 from .test_literals import *
 from .test_logic import *

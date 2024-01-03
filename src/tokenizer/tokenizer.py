@@ -32,6 +32,8 @@ class Tokenizer:
         ('WHILE', r'^\bwhile\b'),
         ('DO', r'^\bdo\b'),
         ('FOR', r'^\bfor\b'),
+        ('DEF', r'^\bdef\b'),
+        ('RETURN', r'^\breturn\b'),
         
         # -----------------
         # Hardcode commands:

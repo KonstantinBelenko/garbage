@@ -60,6 +60,7 @@ class ASTParser:
             | CmdPrintStatement
             | IfStatement
             | IterationStatement
+            | FunctionDeclarationStatement
             ;
         '''
         if self.lookahead.type == ';':
@@ -74,8 +75,69 @@ class ASTParser:
             return self.CmdPrintStatement()
         elif self.lookahead.type == 'WHILE' or self.lookahead.type == 'DO' or self.lookahead.type == 'FOR':
             return self.ParseIterationStatement()
+        elif self.lookahead.type == 'DEF':
+            return self.ParseFunctionDeclarationStatement()
+        elif self.lookahead.type == 'RETURN':
+            return self.ParseReturnStatement()
         else:
             return self.ParseExpressionStatement()
+    
+    def ParseReturnStatement(self) -> Node:
+        '''
+        ReturnStatement
+            | 'return' Expression ';'
+            ;
+        '''
+        self.eat('RETURN')
+        
+        expression = []
+        if self.lookahead.type != ';': 
+            expression.append(self.ParseExpression())
+            
+        self.eat(';')
+        
+        return Node(NT.RETURN_STATEMENT, children=expression)
+    
+    def ParseFunctionDeclarationStatement(self) -> Node:
+        '''
+        FunctionDeclarationStatement
+            | 'def' Identifier '(' FunctionParameters ')' BlockStatement
+            ;
+        '''
+        self.eat('DEF')
+        name = self.Identifier()
+        
+        self.eat('(')
+        parameters = Node(NT.FUNCTION_PARAMETERS, children=[])
+        if self.lookahead.type != ')':
+            parameters = self.ParseFunctionParameters()
+        self.eat(')')
+
+        body = self.ParseBlockStatement()
+        return Node(NT.FUNCTION_DECLARATION_STATEMENT, children=[name, parameters, body])
+    
+    def ParseFunctionParameters(self) -> Node:
+        '''
+        FunctionParameters
+            | ParseFormalParameterList
+            ;
+        '''
+        return Node(NT.FUNCTION_PARAMETERS, children=self.ParseFormalParameterList())
+    
+    def ParseFormalParameterList(self) -> list[Node]:
+        '''
+        FormalParameterList
+            | Identifier
+            | FormalParameterList ',' Identifier
+            ;
+        '''
+        parameters = [self.Identifier()]
+        
+        while self.lookahead.type == ',':
+            self.eat(',')
+            parameters.append( self.Identifier() )
+        
+        return parameters
     
     def ParseIfStatement(self):
         '''

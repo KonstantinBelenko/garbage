@@ -20,6 +20,10 @@ class NT(Enum):
     DO_WHILE_LOOP_STATEMENT = 'DoWhileLoopStatement'
     FOR_LOOP_STATEMENT = 'ForLoopStatement'
     
+    FUNCTION_DECLARATION_STATEMENT = 'FunctionDeclarationStatement'
+    FUNCTION_PARAMETERS = 'FunctionParameters'
+    RETURN_STATEMENT = 'ReturnStatement'
+    
     # --------------------
     # Expressions
     BINARY_EXPRESSION = 'BinaryExpression'
@@ -129,3 +133,4 @@ class Node:
         if self.type == NT.FOR_LOOP_STATEMENT and len(self.children) >= 4:
             return self.children[3]
         raise Exception('For loop statement must have at least 3 children')
+    
