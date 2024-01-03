@@ -15,7 +15,7 @@ class Tokenizer:
     
     spec = [
         # -----------------
-        # Whitespace:
+        # Whitespace / Comment:
         (None, r'^\s+'),
         (None, r'^\/\/.*'),
         (None, r'^\/\*[\s\S]*?\*\/'),
@@ -72,9 +72,10 @@ class Tokenizer:
         ('RELATIONAL_OPERATOR', r'^[><]=?'),
         
         # -----------------
-        # Logic:
+        # Logical operators:
         ('LOGICAL_AND', r'^&&'),
         ('LOGICAL_OR', r'^\|\|'),
+        ('LOGICAL_NOT', r'^!'),
         
         # -----------------
         # Strings:

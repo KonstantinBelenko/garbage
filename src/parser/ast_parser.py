@@ -10,6 +10,7 @@ class ASTParser:
             'ParseAdditiveExpression': self.ParseAdditiveExpression,
             'ParseRelationalExpression': self.ParseRelationalExpression,
             'ParseEqualityExpression': self.ParseEqualityExpression,
+            'ParseUnaryExpression': self.ParseUnaryExpression,
             
             'ParseLogicalANDExpression': self.ParseLogicalANDExpression,
             'ParseLogicalORExpression': self.ParseLogicalORExpression,
@@ -259,10 +260,10 @@ class ASTParser:
     def ParseLeftHandSideExpression(self) -> Node:
         '''
         LeftHandSideExpression
-            | Identifier
+            | PrimaryExpression
             ;
         '''
-        return self.Identifier()
+        return self.ParsePrimaryExpression()
     
     def Identifier(self) -> Node:
         '''
@@ -344,18 +345,38 @@ class ASTParser:
     def ParseMultiplicativeExpression(self) -> Node:
         '''
         MultiplicativeExpression
-            | Literal
-            | MultiplicativeExpression MULTIPLICATIVE_OPERATOR Literal
+            | PrimaryExpression
+            | MultiplicativeExpression MULTIPLICATIVE_OPERATOR PrimaryExpression
             ;
         '''
-        return self._BinaryExpression('ParsePrimaryExpression', 'MULTIPLICATIVE_OPERATOR')
+        return self._BinaryExpression('ParseUnaryExpression', 'MULTIPLICATIVE_OPERATOR')
+    
+    
+    def ParseUnaryExpression(self) -> Node:
+        '''
+        UnaryExpression
+            | LeftHandSideExpression
+            | ADDITIVE_OPERATOR UnaryExpression
+            | LOGICAL_NOT UnaryExpression
+            ;
+        '''
+        operator = None
+        if self.lookahead.type == 'ADDITIVE_OPERATOR':
+            operator = self.eat('ADDITIVE_OPERATOR').value
+        elif self.lookahead.type == 'LOGICAL_NOT':
+            operator = self.eat('LOGICAL_NOT').value
+        
+        if operator:
+            return Node(NT.UNARY_EXPRESSION, operator, [self.ParseUnaryExpression()])
+        
+        return self.ParseLeftHandSideExpression()
     
     def ParsePrimaryExpression(self) -> Node:
         '''
         PrimaryExpression
             | Literal
             | ParenthesizedExpression
-            | LeftHandSideExpression
+            | Identifier
             ;
         '''
         
@@ -364,6 +385,8 @@ class ASTParser:
         
         if self.lookahead.type == '(':
             return self.ParseParenthesizedExpression()
+        elif self.lookahead.type == 'IDENTIFIER':
+            return self.Identifier()
         else:
             return self.ParseLeftHandSideExpression()
     

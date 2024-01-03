@@ -22,6 +22,7 @@ class NT(Enum):
     BINARY_EXPRESSION = 'BinaryExpression'
     ASSIGNMENT_EXPRESSION = 'AssignmentExpression'
     LOGICAL_EXPRESSION = 'LogicalExpression'
+    UNARY_EXPRESSION = 'UnaryExpression'
     
     # --------------------
     # Variables
