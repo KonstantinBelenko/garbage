@@ -24,6 +24,11 @@ class Tokenizer:
         # -----------------
         # Keywords:
         ('LET', r'^\blet\b'),
+        ('IF', r'^\bif\b'),
+        ('ELSE', r'^\belse\b'),
+        ('TRUE', r'^\btrue\b'),
+        ('FALSE', r'^\bfalse\b'),
+        ('NULL', r'^\bnull\b'),
         
         # -----------------
         # Hardcode commands:
@@ -32,11 +37,6 @@ class Tokenizer:
         # -----------------
         # Numbers:
         ('NUMBER', r'^[0-9]+(\.[0-9]+)?'),
-        
-        # -----------------
-        # Strings:
-        ('STRING', r'^"[^"]*"'),  # Matches any character except " between double quotes
-        ('STRING', r'^\'[^\']*\''),  # Matches any character except ' between single quotes
         
         # -----------------
         # Symbols:
@@ -52,10 +52,13 @@ class Tokenizer:
         ('IDENTIFIER', r'^\w+'),
         
         # -----------------
+        # Equality: ==, !=
+        ('EQUALITY_OPERATOR', r'^[!=]='),
+        
+        # -----------------
         # Assignment: =, *=, /=, +=, -=
         ('SIMPLE_ASSIGN', r'^='),
         ('COMPLEX_ASSIGN', r'^[\*\+\-\/]='),
-        
         
         # -----------------
         # Math:
@@ -63,6 +66,20 @@ class Tokenizer:
         ('ADDITIVE_OPERATOR', r'^\-'),
         ('MULTIPLICATIVE_OPERATOR', r'^\*'),
         ('MULTIPLICATIVE_OPERATOR', r'^\/'),
+        
+        # -----------------
+        # Relations:
+        ('RELATIONAL_OPERATOR', r'^[><]=?'),
+        
+        # -----------------
+        # Logic:
+        ('LOGICAL_AND', r'^&&'),
+        ('LOGICAL_OR', r'^\|\|'),
+        
+        # -----------------
+        # Strings:
+        ('STRING', r'^"[^"]*"'),  # Matches any character except " between double quotes
+        ('STRING', r'^\'[^\']*\''),  # Matches any character except ' between single quotes
     ]
     
     def __init__(self, text):

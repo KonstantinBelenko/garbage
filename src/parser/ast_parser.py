@@ -7,6 +7,12 @@ class ASTParser:
         self.builders = {
             'ParseMultiplicativeExpression': self.ParseMultiplicativeExpression,
             'ParsePrimaryExpression': self.ParsePrimaryExpression,
+            'ParseAdditiveExpression': self.ParseAdditiveExpression,
+            'ParseRelationalExpression': self.ParseRelationalExpression,
+            'ParseEqualityExpression': self.ParseEqualityExpression,
+            
+            'ParseLogicalANDExpression': self.ParseLogicalANDExpression,
+            'ParseLogicalORExpression': self.ParseLogicalORExpression,
         }
         self.optimizer = Optimizer()
     
@@ -33,7 +39,7 @@ class ASTParser:
         '''
         StatementList
             | Statement
-            | StatementList Statement
+            | StatementList, Statement
             ;
         '''
         statement_list = [self.ParseStatement()]
@@ -51,10 +57,13 @@ class ASTParser:
             | EmptyStatement
             | VariableStatement
             | CmdPrintStatement
+            | IfStatement
             ;
         '''
         if self.lookahead.type == ';':
             return self.ParseEmptyStatement()
+        elif self.lookahead.type == 'IF':
+            return self.ParseIfStatement()
         elif self.lookahead.type == '{':
             return self.ParseBlockStatement()
         elif self.lookahead.type == 'LET':
@@ -63,6 +72,26 @@ class ASTParser:
             return self.CmdPrintStatement()
         else:
             return self.ParseExpressionStatement()
+    
+    def ParseIfStatement(self):
+        '''
+        If Statement
+            | 'if' '(' Expression ')' Statement
+            | 'if' '(' Expression ')' Statement 'else' Statement
+            ;
+        '''
+        self.eat('IF')
+        self.eat('(')
+        
+        children = [self.ParseExpression()]
+        self.eat(')')
+        
+        children.append(self.ParseStatement())
+        if self.lookahead and self.lookahead.type == 'ELSE':
+            self.eat('ELSE')
+            children.append(self.ParseStatement())
+
+        return Node(NT.IF_STATEMENT, children=children)
     
     def CmdPrintStatement(self) -> Node:
         '''
@@ -183,11 +212,11 @@ class ASTParser:
     def ParseAssignmentExpression(self) -> Node:
         '''
         AssignmentExpression
-            | AdditiveExpression
+            | LogicalORExpression
             | LeftHandSideExpression AssignmentOperator AssignmentExpression
             ;
         '''
-        left = self.ParseAdditiveExpression()
+        left = self.ParseLogicalORExpression()
         if not self._isAssignmentOperator(self.lookahead):
             return left
         
@@ -196,6 +225,36 @@ class ASTParser:
         right = self.ParseAssignmentExpression()
         
         return Node(NT.ASSIGNMENT_EXPRESSION, operator.value, [left, right])
+    
+    def ParseEqualityExpression(self) -> Node:
+        '''
+        
+        x == y
+        x != y
+        
+        EqualityExpression
+            | RelationalExpression EQUALITY_OPERATOR EqualityExpression
+            | RelationalExpression
+            ;
+        '''
+        return self._BinaryExpression('ParseRelationalExpression', 'EQUALITY_OPERATOR')
+    
+    def ParseRelationalExpression(self) -> Node:
+        '''
+        RELATIONA_OPERATOR: >, >=, <, <=
+        
+        x > y
+        x >= y
+        x < y
+        x <= y
+        
+        RelationalExpression
+            | AdditiveExpression
+            | AdditiveExpression RELATIONA_OPERATOR RelationalExpression
+            ;
+        '''
+        
+        return self._BinaryExpression('ParseAdditiveExpression', 'RELATIONAL_OPERATOR')
     
     def ParseLeftHandSideExpression(self) -> Node:
         '''
@@ -236,6 +295,33 @@ class ASTParser:
         if self.lookahead.type == 'SIMPLE_ASSIGN':
             return self.eat('SIMPLE_ASSIGN')
         return self.eat('COMPLEX_ASSIGN')
+    
+    def _LogicalExpression(self, builderName: str, operatorToken: str) -> Node:
+        left = self.builders[builderName]()
+        while self.lookahead.type == operatorToken:
+            operator = self.eat(operatorToken).value
+            right = self.builders[builderName]()
+            left = Node(NT.BINARY_EXPRESSION, operator, [left, right])
+        
+        return left
+    
+    def ParseLogicalORExpression(self) -> Node:
+        '''
+        LogicalORExpression
+            | LogicalANDExpression
+            | LogicalORExpression LOGICAL_OR LogicalANDExpression
+            ;
+        '''
+        return self._LogicalExpression('ParseLogicalANDExpression', 'LOGICAL_OR')
+    
+    def ParseLogicalANDExpression(self) -> Node:
+        '''
+        LogicalANDExpression
+            | EqualityExpression
+            | LogicalANDExpression LOGICAL_AND EqualityExpression
+            ;
+        '''
+        return self._LogicalExpression('ParseEqualityExpression', 'LOGICAL_AND')
     
     def ParseAdditiveExpression(self) -> Node:
         '''
@@ -282,7 +368,7 @@ class ASTParser:
             return self.ParseLeftHandSideExpression()
     
     def _isLiteral(self, token: Token) -> bool:
-        return token == 'NUMBER' or token == 'STRING'
+        return token == 'NUMBER' or token == 'STRING' or token == 'TRUE' or token == 'FALSE' or token == 'NULL'
     
     def ParseParenthesizedExpression(self) -> Node:
         '''
@@ -301,6 +387,8 @@ class ASTParser:
         Literal
             | NumericLiteral
             | StringLiteral
+            | BooleanLiteral
+            | NullLiteral
             ;
         '''
         
@@ -308,9 +396,38 @@ class ASTParser:
             return self.NumericLiteral()
         elif self.lookahead.type == 'STRING':
             return self.StringLiteral()
+        elif self.lookahead.type == 'TRUE':
+            return self.BooleanLiteral(True)
+        elif self.lookahead.type == 'FALSE':
+            return self.BooleanLiteral(False)
+        elif self.lookahead.type == 'NULL':
+            return self.NullLiteral()
         else:
             raise Exception(f'Unexpected token {self.lookahead.type}')
+    
+    def BooleanLiteral(self, value: bool) -> Node:
+        '''
+        BooleanLiteral
+            | 'true'
+            | 'false'
+            ;
+        '''
+        if value:
+            self.eat('TRUE')
+        else:
+            self.eat('FALSE')
         
+        return Node(NT.BOOLEAN_LITERAL, value)
+    
+    def NullLiteral(self) -> Node:
+        '''
+        NullLiteral
+            | 'null'
+            ;
+        '''
+        self.eat('NULL')
+        return Node(NT.NULL_LITERAL)
+    
     def StringLiteral(self) -> Node:
         '''
         StringLiteral

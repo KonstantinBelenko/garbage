@@ -2,22 +2,39 @@ from __future__ import annotations
 from enum import Enum
 
 class NT(Enum):
+    
+    # --------------------
+    # Reserved Node Types
     PROGRAM = 'Program'
-    STATEMENT_LIST = 'StatementList'
-    STATEMENT = 'Statement'
-    EXPRESSION_STATEMENT = 'ExpressionStatement'
     CMD_PRINT_STATEMENT = 'CmdPrintStatement'
+    
+    # --------------------
+    # Statements
+    STATEMENT = 'Statement'
+    STATEMENT_LIST = 'StatementList'
+    EXPRESSION_STATEMENT = 'ExpressionStatement'
     BLOCK_STATEMENT = 'BlockStatement'
     EMPTY_STATEMENT = 'EmptyStatement'
+    IF_STATEMENT = 'IfStatement'
+    
+    # --------------------
+    # Expressions
+    BINARY_EXPRESSION = 'BinaryExpression'
+    ASSIGNMENT_EXPRESSION = 'AssignmentExpression'
+    LOGICAL_EXPRESSION = 'LogicalExpression'
+    
+    # --------------------
+    # Variables
     VARIABLE_DECLARATION = 'VariableDeclaration'
     VARIABLE_STATEMENT = 'VariableStatement'
-    ASSIGNMENT_EXPRESSION = 'AssignmentExpression'
     IDENTIFIER = 'Identifier'
-    BINARY_EXPRESSION = 'BinaryExpression'
+    
+    # --------------------
+    # Literals
     NUMERIC_LITERAL = 'NumericLiteral'
     STRING_LITERAL = 'StringLiteral'
-    
-    INTERMEDIATE_EXPRESSION = 'IntermediateExpression'
+    BOOLEAN_LITERAL = 'BooleanLiteral'
+    NULL_LITERAL = 'NullLiteral'
     
     def __eq__(self, other):
         if not isinstance(other, NT):
