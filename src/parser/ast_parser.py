@@ -59,6 +59,7 @@ class ASTParser:
             | VariableStatement
             | CmdPrintStatement
             | IfStatement
+            | IterationStatement
             ;
         '''
         if self.lookahead.type == ';':
@@ -71,6 +72,8 @@ class ASTParser:
             return self.ParseVariableStatement()
         elif self.lookahead.type == '_PRINT':
             return self.CmdPrintStatement()
+        elif self.lookahead.type == 'WHILE' or self.lookahead.type == 'DO' or self.lookahead.type == 'FOR':
+            return self.ParseIterationStatement()
         else:
             return self.ParseExpressionStatement()
     
@@ -94,6 +97,91 @@ class ASTParser:
 
         return Node(NT.IF_STATEMENT, children=children)
     
+    def ParseIterationStatement(self) -> Node:
+        '''
+        IterationStatement
+            | WhileStatement
+            | DoWhileStatement
+            | ForStatement
+            ;
+        '''
+        if self.lookahead.type == 'WHILE':
+            return self.ParseWhileStatement()
+        elif self.lookahead.type == 'DO':
+            return self.ParseDoWhileStatement()
+        elif self.lookahead.type == 'FOR':
+            return self.ParseForStatement()
+    
+    def ParseForStatement(self) -> Node:
+        '''
+        ForStatement
+            | 'for' '(' OptForStatementInit ';' OptExpression ';' OptExpression ')' Statement
+            ;
+        '''
+        self.eat('FOR')
+        self.eat('(')
+        
+        init = None
+        if self.lookahead.type != ';':
+            init = self.ParseForStatementInit()
+        self.eat(';')
+        
+        test = None
+        if self.lookahead.type != ';':
+            test = self.ParseExpression()
+        self.eat(';')
+        
+        update = None
+        if self.lookahead.type != ')':
+            update = self.ParseExpression()
+        self.eat(')')
+        
+        body = self.ParseStatement()
+        return Node(NT.FOR_LOOP_STATEMENT, children=[init, test, update, body])
+    
+    def ParseForStatementInit(self) -> Node:
+        '''
+        ForStatementInit
+            | VariableStatementInit
+            | ExpressionStatement
+            ;
+        '''
+        if self.lookahead.type == 'LET':
+            return self.ParseVariableStatementInit()
+        return self.ParseExpression()
+    
+    def ParseDoWhileStatement(self) -> Node:
+        '''
+        DoWhileStatement
+            | 'do' Statement 'while' '(' Expression ')' ';'
+            ;
+        '''
+        self.eat('DO')
+        children = [self.ParseStatement()]
+        self.eat('WHILE')
+        self.eat('(')
+        children.append(self.ParseExpression())
+        self.eat(')')
+        self.eat(';')
+        
+        return Node(NT.DO_WHILE_LOOP_STATEMENT, children=children)
+    
+    def ParseWhileStatement(self) -> Node:
+        '''
+        WhileStatement
+            | 'while' '(' Expression ')' Statement
+            ;
+        '''
+        self.eat('WHILE')
+        self.eat('(')
+        
+        children = [self.ParseExpression()]
+        self.eat(')')
+        
+        children.append(self.ParseStatement())
+
+        return Node(NT.WHILE_LOOP_STATEMENT, children=children)
+    
     def CmdPrintStatement(self) -> Node:
         '''
         CmdPrintStatement
@@ -109,18 +197,26 @@ class ASTParser:
         
         return Node(NT.CMD_PRINT_STATEMENT, children=[expression])
 
-    
-    def ParseVariableStatement(self) -> Node:
+
+    def ParseVariableStatementInit(self) -> list[Node]:
         '''
-        VariableStatement
-            | 'let' VariableDeclarationList ';'
+        VariableStatementInit
+            | 'let' VariableDeclarationList
             ;
         '''
         self.eat('LET')
         declarations = self.ParseVariableDeclarationList()
-        self.eat(';')
-        
         return Node(NT.VARIABLE_STATEMENT, children=declarations)
+    
+    def ParseVariableStatement(self) -> Node:
+        '''
+        VariableStatement
+            | VariableStatementInit ';'
+            ;
+        '''
+        init = self.ParseVariableStatementInit()
+        self.eat(';')
+        return init
     
     def ParseVariableDeclarationList(self) -> list[Node]:
         '''

@@ -29,6 +29,9 @@ class Tokenizer:
         ('TRUE', r'^\btrue\b'),
         ('FALSE', r'^\bfalse\b'),
         ('NULL', r'^\bnull\b'),
+        ('WHILE', r'^\bwhile\b'),
+        ('DO', r'^\bdo\b'),
+        ('FOR', r'^\bfor\b'),
         
         # -----------------
         # Hardcode commands:

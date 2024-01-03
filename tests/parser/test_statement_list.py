@@ -33,5 +33,14 @@ class TestStatementLists(unittest.TestCase):
             ])
         )
     
+    def test_empty_statement_list(self):
+        ast = self.ast_parser.parse(';')
+        self.assertEqual(
+            ast, 
+            Node(NT.PROGRAM, children=[
+                Node(NT.EMPTY_STATEMENT)
+            ])
+        )
+    
 if __name__ == '__main__':
     unittest.main()

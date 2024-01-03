@@ -1,7 +1,7 @@
 from src.parser import ASTParser, NT, Node
 import unittest
 
-class TestLiterals(unittest.TestCase):
+class TestRelationals(unittest.TestCase):
     
     def setUp(self):
         self.ast_parser = ASTParser()

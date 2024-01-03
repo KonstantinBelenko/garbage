@@ -16,6 +16,9 @@ class NT(Enum):
     BLOCK_STATEMENT = 'BlockStatement'
     EMPTY_STATEMENT = 'EmptyStatement'
     IF_STATEMENT = 'IfStatement'
+    WHILE_LOOP_STATEMENT = 'WhileLoopStatement'
+    DO_WHILE_LOOP_STATEMENT = 'DoWhileLoopStatement'
+    FOR_LOOP_STATEMENT = 'ForLoopStatement'
     
     # --------------------
     # Expressions
@@ -106,3 +109,23 @@ class Node:
 
     def operator(self):
         return self.value
+    
+    def for_init(self):
+        if self.type == NT.FOR_LOOP_STATEMENT and len(self.children) >= 1:
+            return self.children[0]
+        raise Exception('For loop statement must have at least 3 children')
+    
+    def for_condition(self):
+        if self.type == NT.FOR_LOOP_STATEMENT and len(self.children) >= 2:
+            return self.children[1]
+        raise Exception('For loop statement must have at least 3 children')
+    
+    def for_update(self):
+        if self.type == NT.FOR_LOOP_STATEMENT and len(self.children) >= 3:
+            return self.children[2]
+        raise Exception('For loop statement must have at least 3 children')
+    
+    def for_body(self):
+        if self.type == NT.FOR_LOOP_STATEMENT and len(self.children) >= 4:
+            return self.children[3]
+        raise Exception('For loop statement must have at least 3 children')
