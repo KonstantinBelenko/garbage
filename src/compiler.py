@@ -1,18 +1,18 @@
 from src.parser import ASTParser
-from src.codegen import CodeGenerator, CodeGen_v2
 from src.shared_utils import assemble, link
+from src.codegen import Codegen
 
 from typing import Optional
+import subprocess
 import tempfile
 import os
     
-def compile(code: str, asm_path: Optional[str] = None, obj_path: Optional[str] = None, out_path: Optional[str] = None):
+def compile(codegen: Codegen, code: str, asm_path: Optional[str] = None, obj_path: Optional[str] = None, out_path: Optional[str] = None):
 
     parser = ASTParser()
-    codegen = CodeGen_v2()
     
     ast = parser.parse(code)
-    assembly: list[str] = codegen.generate(ast)
+    assembly: list[str] = codegen(ast).compile()
 
     random_tmp_dir = tempfile.TemporaryDirectory()
     asm_path = asm_path if asm_path else random_tmp_dir.name + '/temp.s'
@@ -29,9 +29,19 @@ def compile(code: str, asm_path: Optional[str] = None, obj_path: Optional[str] =
     if EXECUTION_MODE:
         os.system(out_path)
 
-def compile_test(code: str) -> str:
+
+def compile_run(codegen: Codegen, code: str) -> tuple[subprocess.CompletedProcess, str]:
     '''
-    Compiles the code and returns the path to the executable.
+    Compiles the code and runs the executable.
+    Returns the output of the executable and the path to the executable.
     '''
-    compile(code, 'tmp.s', None, 'tmp.out')
-    return 'tmp.out'
+    out_asm = 'tmp/tmp.s'
+    out_obj = 'tmp/tmp.o'
+    out_exe = 'tmp/tmp'
+    
+    compile(codegen, code, out_asm, out_obj, out_exe)
+    
+    # run the executable and return the output
+    output = subprocess.run([out_exe], capture_output=True, shell=True, text=True)
+    
+    return output, out_exe
